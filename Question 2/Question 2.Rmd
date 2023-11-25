@@ -117,8 +117,7 @@ RetData <- as.data.frame( cbind(Weights_Indexed$PortRet, ZAR$ZarRet)) %>%
 
 ```
 
-
-```{r}
+```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = " \\label{Figure2.1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
 
 ggplot(RetData, 
        aes(x = ZARRet, y = PortRet)) +
@@ -128,7 +127,7 @@ ggplot(RetData,
              ymin = -Inf, 
              ymax = 0, 
              fill = "red", 
-             alpha = 0.1) +
+             alpha = 0.18) +
     annotate("rect", 
              xmin = 0, 
              xmax = Inf, 
@@ -149,9 +148,9 @@ ggplot(RetData,
              ymin = 0, 
              ymax = Inf, 
              fill = "blue", 
-             alpha = 0.1) +
-    geom_point(color = "blue", 
-               alpha = 0.5) +
+             alpha = 0.18) +
+    geom_point(color = "steelblue4", 
+               alpha = 0.45) +
     geom_smooth(method = "lm", 
                 se = TRUE, 
                 color = "grey") + 
@@ -186,6 +185,24 @@ ggplot(RetData,
              fill = "white", 
              color = "black") +
   theme_bw()
+
+```
+
+```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = " \\label{Figure2.2}", fig.ext = 'png', fig.height = 3, fig.width = 6}
+
+ggplot(RetData, 
+       aes(x = ZARRet, 
+           fill = "ZAR/USD")) +
+  geom_density(alpha = 0.5) +
+  geom_density(aes(x = PortRet, 
+                   fill = "Portfolio"), alpha = 0.5) +
+  labs(title = "Distribution of Returns",
+       x = "",
+       y = "") +
+  scale_fill_manual(name = "",
+                    values = c("ZAR/USD" = "green",
+                               "Portfolio" = "blue")) +
+  theme(legend.position = "bottom")
 
 ```
 
