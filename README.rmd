@@ -6,12 +6,7 @@ output:
 
 # Purpose
 
-Purpose of this work folder.
-
-Ideally store a minimum working example data set in data folder.
-
-Add binary files in bin, and closed R functions in code. Human Readable settings files (e.g. csv) should be placed in settings/
-
+The goal of this README is to give a clear explanation behind the code I provide in order to perform the Financial Econometrics practical, as well as the thought processes which lead me to the specific code selected or implemented. 
 
 ```{r}
 
@@ -41,7 +36,6 @@ list.files('Question 6/code/', full.names = T, recursive = T) %>% .[grepl('.R', 
 list.files('Question 7/code/', full.names = T, recursive = T) %>% .[grepl('.R', .)] %>% as.list() %>% walk(~source(.))
 
 ###
-
 
 ```
 
