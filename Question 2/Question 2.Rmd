@@ -62,7 +62,9 @@ Indexes <- read_rds("data/Cncy_Hedge_Assets.rds")
 # msci acwi is equities. (foreign)
 
 ZAR <- read_rds("data/Monthly_zar.rds") %>% 
-    filter(date >= as.Date(first(Indexes$date))) %>%
+    filter(date >= as.Date(
+        first(
+            Indexes$date))) %>%
     select(-Tickers)
 
 ### How much should I hold in this portfolio given that I need a 60/40 split between equity/bonds and a 70/30 split between local/global split?
@@ -97,7 +99,8 @@ ZAR <- ZAR %>%
 
 RetData <- as.data.frame( cbind(Weights_Indexed$PortRet, ZAR$ZarRet)) %>% 
     rename(PortRet = V1) %>% 
-    rename(ZARRet = V2) %>% na.omit(.)
+    rename(ZARRet = V2) %>% 
+    na.omit(.)
 
 ```
 
@@ -195,7 +198,8 @@ ggplot(RetData,
            fill = "ZAR/USD")) +
   geom_density(alpha = 0.5) +
   geom_density(aes(x = PortRet, 
-                   fill = "Portfolio"), alpha = 0.5) +
+                   fill = "Portfolio"), 
+                   alpha = 0.5) +
   labs(title = "Distribution of Returns",
        x = "",
        y = "") +
@@ -224,7 +228,7 @@ library(PerformanceAnalytics)
 library(RcppRoll)
 library(tbl2xts)
 
-### Plain ole rebalancing portfolio.
+### Plain ole re balancing portfolio.
 
 RebalancedData <- Return.portfolio(
     Indexes, weights = Weights, rebalance_on = "quarters") %>% 
@@ -244,33 +248,34 @@ ZAR <- ZAR %>%
 RandRebalance <- RebalancedData %>% 
     mutate(Hedged = (0.9*portfolio.returns + 0.1*ZAR$ZarRet))
 
+# I assume this is incredibly dubious, but I could not figure out another way to argue that I am holding a portfolio that re balances every quarter, and holds 10% of the rand, so I did this weighted average. 
+
 RandRebalance <- RandRebalance %>% 
     mutate(RollSDHedged = RcppRoll::roll_sd(1 + Hedged, 
                                       36, 
                                       fill = NA, 
                                       align = "right") * sqrt(12)) %>%  
                                       filter(!is.na(RollSDHedged)) %>% 
-    select(date, RollSD, RollSDHedged) 
+    select(date, 
+           RollSD,
+           RollSDHedged) 
 
 ###
 
 library(fmxdat)
 
-g <- 
-RandRebalance %>%
+g <- RandRebalance %>%
   ggplot(aes(x = date)) +
-  geom_line(aes(y = RollSD), color = "blue4", size = 1) +
-  geom_line(aes(y = RollSDHedged), color = "red4", size = 1) +
+  geom_line(aes(y = RollSD, color = "Excluding Rand"), size = 1) +
+  geom_line(aes(y = RollSDHedged, color = "Including Rand"), size = 1) +
   labs(title = "Rolling Volatility",
        x = "Date",
        y = "Standard Deviation") +
+  scale_color_manual(values = c("Excluding Rand" = "red", "Including Rand" = "red4")) +
     theme_fmx(title.size = ggpts(30),
               CustomCaption = F) + 
     
 fmx_cols()
-
-finplot(g, x.date.dist = "1 year", x.date.type = "%Y", x.vert = T, 
-    y.pct = T, y.pct_acc = 1)
 
 ```
 
