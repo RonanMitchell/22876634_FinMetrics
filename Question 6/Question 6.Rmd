@@ -12,7 +12,7 @@ output:
     df_print: paged
 Author1: Ronan Morris
 Ref1: Stellenbosch University
-Email1: 22876634\\@sun.ac.za
+Email1: 22876634
 BottomRFooter: \footnotesize Page \thepage
 addtoprule: yes
 addfootrule: yes

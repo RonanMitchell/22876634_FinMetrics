@@ -46,7 +46,107 @@ if(!require("tidyverse")) install.packages("tidyverse")
 
 library(tidyverse)
 
+library(rportfolios)
+
 ```
+
+```{r}
+
+rm(list = ls())
+
+Indexes <- read_rds("data/Cncy_Hedge_Assets.rds")
+
+# ALBI is bonds (local)
+# J433 is equities (local)
+# bbg agg is Bloomberg bond aggregator. (foreign)
+# msci acwi is equities. (foreign)
+
+ZAR <- read_rds("data/Monthly_zar.rds") %>% 
+    filter(date >= as.Date(first(Indexes$date))) %>%
+    select(-Tickers)
+
+### How much should I hold in this portfolio given that I need a 60/40 split between equity/bonds and a 70/30 split between local/global split?
+
+# for ALBI: 0.4 * 0.7 = 0.28
+# for J433: 0.6 * 0.7 = 0.42
+# for BBG: 0.4 * 0.3 = 0.12
+# for MSCI: 0.6 * 0.3 = 0.18
+
+# This sums to one. 
+
+Weights <- c(0.18, 0.12, 0.42, 0.28)
+
+Weights_Indexed <- Weights * (Indexes %>% select(-date))
+
+Weights_Indexed$date <- Indexes$date
+
+Weights_Indexed <- Weights_Indexed %>% slice(-1)
+
+###
+
+# Add a portfolio return column:
+
+Weights_Indexed <- Weights_Indexed %>% 
+    mutate(PortRet = rowSums(Weights_Indexed %>% select(-date)))
+
+ZAR <- ZAR %>% 
+    mutate(ZarRet = value/lag(value) - 1) %>% 
+    slice(-1)
+
+###
+
+RetData <- as.data.frame( cbind(Weights_Indexed$PortRet, ZAR$ZarRet)) %>% 
+    rename(PortRet = V1) %>% 
+    rename(ZARRet = V2)
+
+ggplot(RetData, 
+       aes(x = ZARRet, y = PortRet)) +
+    annotate("rect", 
+             xmin = -Inf, 
+             xmax = 0, 
+             ymin = -Inf, 
+             ymax = 0, 
+             fill = "red", 
+             alpha = 0.1) +
+    annotate("rect", 
+             xmin = 0, 
+             xmax = Inf, 
+             ymin = -Inf, 
+             ymax = 0, 
+             fill = "lightblue", 
+             alpha = 0.2) +
+    annotate("rect", 
+             xmin = -Inf,
+             xmax = 0, 
+             ymin = 0, 
+             ymax = Inf,
+             fill = "pink", 
+             alpha = 0.2) +
+    annotate("rect", 
+             xmin = 0,
+             xmax = Inf, 
+             ymin = 0, 
+             ymax = Inf, 
+             fill = "blue", 
+             alpha = 0.1) +
+    geom_point(color = "blue", 
+               alpha = 0.5) +
+    geom_smooth(method = "lm", 
+                se = TRUE, 
+                color = "grey") + 
+  labs(title = "",
+       x = "Portfolio",
+       y = "ZAR/USD") +
+    geom_vline(xintercept = -0.025, 
+               linetype = "dotted", 
+               color = "black", 
+               alpha = 0.5, 
+               size = 1) +
+    xlim(c(-0.2, 0.2)) +  
+    ylim(c(-0.2, 0.2))
+
+```
+
 
 # Data 
 
