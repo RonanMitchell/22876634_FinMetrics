@@ -44,9 +44,67 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width 
 
 if(!require("tidyverse")) install.packages("tidyverse")
 
+```
+
+```{r}
+
+rm(list=ls())
+
 library(tidyverse)
 
+ALSI <- read_rds("data/ALSI.rds")
+
+ZAR <- read_rds("data/Monthly_zar.rds") %>% 
+    filter(date >= first(ALSI$date))
+
+SWIX <- read_rds("data/Capped_SWIX.rds") %>% 
+    filter(date >= first(ALSI$date) & date <= last(ZAR$date))
+
+RebDays <- read_rds("data/Rebalance_days.rds") %>% 
+    filter(date >= first(ALSI$date) & date <= last(ZAR$date)) %>% 
+    filter(!Date_Type == "Effective Date")
+
+ALSI <- ALSI %>% 
+    filter(date <= last(ZAR$date)) %>% 
+    na.omit()
+
+### Converting the ALSI into monthly data so that I can compare. 
+
+monthlyALSI <- ALSI %>%
+  group_by(Tickers, year_month = format(date, "%Y-%m")) %>%
+  summarise(
+    Returns = (prod(1 + Return) - 1),
+    J203 = first(J203),
+    J403 = first(J403),
+    Sector = first(Sector),
+    Index_Name = last(Index_Name),
+    date = last(date)
+  ) %>% ungroup() %>% 
+    select(-year_month)
+
+# Filter Into Large 
+
+LargeALSI <- monthlyALSI %>% 
+    filter(Index_Name == "Large_Caps")
+
+# Filter Into Mid
+
+MidALSI <- monthlyALSI %>% 
+    filter(Index_Name == "Mid_Caps")
+
+# Filter into Small 
+
+Smalsi <- monthlyALSI %>% 
+    filter(Index_Name == "Small_Caps")
+
 ```
+
+```{r}
+
+ 
+
+```
+
 
 # Data 
 
