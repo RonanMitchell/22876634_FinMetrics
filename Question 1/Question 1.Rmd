@@ -46,9 +46,156 @@ if(!require("tidyverse")) install.packages("tidyverse")
 
 library(tidyverse)
 
+library(dplyr)
+
+library(fmxdat)
+
+###
+
+rm(list = ls())
+
+ASISA <- read_rds("data/ASISA_Rets.rds") %>% 
+    filter(date >= as.Date("2010-01-31"))
+
+BM <- read_rds("data/Capped_SWIX.rds") %>% 
+    filter(date >= as.Date("2010-01-31")) %>% 
+    select(-Tickers)
+
+AIFund <- read_rds("data/AI_Max_Fund.rds") %>% 
+    filter(date >= as.Date("2010-01-31"))
+
 ```
 
-# Data 
+# Data Wrangling 
+
+```{r Getting Selected Funds, echo=FALSE, include=FALSE}
+
+unique(ASISA$Fund) # Too many funds to consider. 
+
+# I am going to select the best and worst performing index and active funds separately. 
+
+# Not all funds have the same starting date as my AI... 
+
+ASISA <-
+  ASISA %>%
+  group_by(Fund) %>%
+  filter(min(date) == as.Date("2010-01-31") & 
+             max(date) == as.Date("2023-09-30")) %>%
+  ungroup()
+
+# Best Performing fund that is an index: A235
+       # 0.00903
+
+ASISA %>%
+  filter(Index == "Yes") %>%
+  group_by(Fund) %>%
+  summarise(avg_returns = mean(Returns, na.rm = TRUE)) %>%
+  arrange(desc(avg_returns)) %>%
+  slice(1)
+
+# Worst performing Index Fund: R174
+        # -0.00786
+
+ASISA %>%
+  filter(Index == "Yes") %>%
+  group_by(Fund) %>%
+  summarise(avg_returns = mean(Returns, na.rm = TRUE)) %>%
+  arrange(avg_returns) %>%
+  slice(1)
+
+# Best Performing Active Fund: S1007 (also best performing fund in general)
+       # 0.0148
+
+ASISA %>%
+  filter(Index == "No") %>%
+  group_by(Fund) %>%
+  summarise(avg_returns = mean(Returns, na.rm = TRUE)) %>%
+  arrange(desc(avg_returns)) %>%
+  slice(1)
+
+# Worst performing Active Fund: V412 (and worst overall)
+        # 0.00312
+
+ASISA %>%
+  filter(Index == "No") %>%
+  group_by(Fund) %>%
+  summarise(avg_returns = mean(Returns, na.rm = TRUE)) %>%
+  arrange(avg_returns) %>%
+  slice(1)
+
+# Selection: 
+
+Selected_Funds <- c("V412","S1007", "R174", "A235")
+
+ASISA <- ASISA %>% 
+    filter(Fund %in% Selected_Funds)
+
+```
+
+# Density Functions with Fees
+
+```{r}
+
+library(ggplot2)
+
+### I want to plot all return distributions on the same set of axes. 
+
+wide_format_ASISA <- ASISA %>% 
+    select(c(Fund, Returns, date)) %>%
+    spread(Fund, Returns)
+
+joined_data <- left_join(BM, AIFund, by = "date") %>%
+  left_join(., wide_format_ASISA, by = "date")
+
+joined_data$BM <- joined_data$Returns 
+
+###
+
+# Active Managers
+
+fee <- 0.025/12 # 2% fee per month
+
+ggplot(joined_data) +
+  geom_density(aes(x = (S1007 - fee), fill = "S1007"), alpha = 0.45) +
+  geom_density(aes(x = AI_Fund, fill = "AI Fund"), alpha = 0.65) +
+  geom_density(aes(x = (V412 - fee), fill = "V412"), alpha = 0.45) +
+  labs(title = "",
+       y = "Density",
+       x = "Return Distribution") +
+  theme_fmx() +
+  scale_fill_manual(values = c("yellow", "blue", "blue4"), name = "Variables") +
+  guides(fill = guide_legend(title = "Variables"))
+
+# Index Funds 
+
+fee <- 0.01/12 # 2% fee per month
+
+ggplot(joined_data) +
+  geom_density(aes(x = (R174 - fee), fill = "R174"), alpha = 0.45) +
+  geom_density(aes(x = AI_Fund, fill = "AI Fund"), alpha = 0.65) +
+  geom_density(aes(x = (A235 - fee), fill = "A235"), alpha = 0.45) +
+  labs(title = "",
+       y = "Density",
+       x = "Return Distribution") +
+  theme_fmx() +
+  scale_fill_manual(values = c("blue", "yellow", "blue4"), name = "Variables") +
+  guides(fill = guide_legend(title = "Variables"))
+
+# Benchmark 
+
+ggplot(joined_data) +
+  geom_density(aes(x = AI_Fund, fill = "AI Fund"), alpha = 0.65) +
+  geom_density(aes(x = BM, fill = "Benchmark"), alpha = 0.45) +
+  labs(title = "",
+       y = "Density",
+       x = "Return Distribution") +
+  theme_fmx() +
+  scale_fill_manual(values = c("yellow", "blue4"), name = "Variables") +
+  guides(fill = guide_legend(title = "Variables"))
+
+```
+
+# Rolling Returns
 
 ```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
 
