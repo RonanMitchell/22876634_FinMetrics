@@ -197,8 +197,58 @@ ggplot(joined_data) +
 
 # Rolling Returns
 
-```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
+```{r}
 
+# Get data into the correct format. 
+
+long_format_data <- joined_data %>% 
+    select(-Returns) %>%
+  pivot_longer(-date, names_to = "Tickers", values_to = "Returns")
+
+# Cumulative Returns 
+
+long_format_data %>%  
+arrange(date) %>%   group_by(Tickers) %>%   
+mutate(Rets = coalesce(Returns, 0)) %>%   
+mutate(CP = cumprod(1 + Rets)) %>%   
+ungroup() %>%   
+ggplot() + 
+geom_line(aes(date, CP, color = Tickers), 
+          alpha = 1, 
+          size = 1) + 
+    xlab("Date") +
+    ylab("") +
+labs(title = "Cumulative Returns of All Funds") + 
+    theme_fmx(title.size = ggpts(20), CustomCaption = F)
+
+# Rolling Returns 
+
+library(RcppRoll)
+
+plotdf <- long_format_data %>%
+    group_by(Tickers) %>%   
+    mutate(RollRets = RcppRoll::roll_prod(1 + Returns, 
+                                          36, 
+                                          fill = NA, 
+                                          align = "right")^(12/36) - 1) %>% 
+    group_by(date) %>% 
+    filter(any(!is.na(RollRets))) %>%   
+    ungroup()
+
+g <- 
+plotdf |>  
+ggplot() + 
+geom_line(aes(date, RollRets, color = Tickers), 
+          alpha = 1, 
+          size = 1) + 
+labs(title = "Rolling 3-Year Returns", 
+    subtitle = "", x = "", y = "", 
+    caption = "") + theme_fmx(title.size = ggpts(20), 
+                              CustomCaption = F) + 
+    
+fmx_cols()
+
+finplot(g, x.date.dist = "1 year", x.date.type = "%Y", x.vert = T, 
+    y.pct = T, y.pct_acc = 1)
 
 ```
-
