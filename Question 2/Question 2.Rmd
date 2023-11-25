@@ -97,7 +97,28 @@ ZAR <- ZAR %>%
 
 RetData <- as.data.frame( cbind(Weights_Indexed$PortRet, ZAR$ZarRet)) %>% 
     rename(PortRet = V1) %>% 
-    rename(ZARRet = V2)
+    rename(ZARRet = V2) %>% na.omit(.)
+
+```
+
+```{r}
+
+# Some calculations of %
+# I continually changed the directions of these greater than signs. 
+
+(RetData %>% 
+    filter(PortRet > 0, ZARRet < 0) %>% 
+    nrow(.))/nrow(RetData)*100
+
+# 20.16% top right 
+# 9.31% bottom left corner 
+# 26.36% bottom right.
+# 43.79% top left. 
+
+```
+
+
+```{r}
 
 ggplot(RetData, 
        aes(x = ZARRet, y = PortRet)) +
@@ -134,7 +155,7 @@ ggplot(RetData,
     geom_smooth(method = "lm", 
                 se = TRUE, 
                 color = "grey") + 
-  labs(title = "",
+  labs(title = "Scatter Plot of Return Correlation",
        x = "Portfolio",
        y = "ZAR/USD") +
     geom_vline(xintercept = -0.025, 
@@ -143,7 +164,28 @@ ggplot(RetData,
                alpha = 0.5, 
                size = 1) +
     xlim(c(-0.2, 0.2)) +  
-    ylim(c(-0.2, 0.2))
+    ylim(c(-0.2, 0.2)) +
+    geom_label(aes(x = -0.1, 
+                   y = 0.1, 
+                   label = "43.79%"), 
+               fill = "white", 
+               color = "black") +
+    geom_label(aes(x = 0.1, 
+                   y = 0.1, 
+                   label = "20.16%"), 
+               fill = "white", 
+               color = "black") +
+    geom_label(aes(x = -0.1,
+                   y = -0.1, 
+                   label = "9.31%"), 
+               fill = "white", 
+               color = "black") +
+  geom_label(aes(x = 0.1, 
+                 y = -0.1, 
+                 label = "26.36"), 
+             fill = "white", 
+             color = "black") +
+  theme_bw()
 
 ```
 
