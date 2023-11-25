@@ -50,7 +50,11 @@ library(dplyr)
 
 library(fmxdat)
 
-###
+```
+
+# Data Wrangling 
+
+```{r Import Data}
 
 rm(list = ls())
 
@@ -64,9 +68,9 @@ BM <- read_rds("data/Capped_SWIX.rds") %>%
 AIFund <- read_rds("data/AI_Max_Fund.rds") %>% 
     filter(date >= as.Date("2010-01-31"))
 
-```
+# Post global financial crisis. 
 
-# Data Wrangling 
+```
 
 ```{r Getting Selected Funds, echo=FALSE, include=FALSE}
 
@@ -75,6 +79,8 @@ unique(ASISA$Fund) # Too many funds to consider.
 # I am going to select the best and worst performing index and active funds separately. 
 
 # Not all funds have the same starting date as my AI... 
+
+# I am selecting only funds that at least have a minimum date of 2010 and must have a maximum date of 2023. This excludes funds that do not exist over the entire sample period. 
 
 ASISA <-
   ASISA %>%
@@ -153,7 +159,7 @@ joined_data$BM <- joined_data$Returns
 
 # Active Managers
 
-fee <- 0.025/12 # 2% fee per month
+fee <- 0.025/12 # 2.5% fee per month annualized.
 
 ggplot(joined_data) +
   geom_density(aes(x = (S1007 - fee), fill = "S1007"), alpha = 0.45) +
@@ -168,7 +174,7 @@ ggplot(joined_data) +
 
 # Index Funds 
 
-fee <- 0.01/12 # 2% fee per month
+fee <- 0.01/12 # 1% fee per month annualised.
 
 ggplot(joined_data) +
   geom_density(aes(x = (R174 - fee), fill = "R174"), alpha = 0.45) +
@@ -244,6 +250,32 @@ geom_line(aes(date, RollRets, color = Tickers),
 labs(title = "Rolling 3-Year Returns", 
     subtitle = "", x = "", y = "", 
     caption = "") + theme_fmx(title.size = ggpts(20), 
+                              CustomCaption = F) + 
+    
+fmx_cols()
+
+finplot(g, x.date.dist = "1 year", x.date.type = "%Y", x.vert = T, 
+    y.pct = T, y.pct_acc = 1)
+
+### Rolling Standard Deviation 
+
+plot_dlog <- long_format_data %>% 
+mutate(YM = format(date, "%Y%B")) |>  
+arrange(date) |>  
+group_by(Tickers, YM) |>  filter(date == last(date)) |>  
+group_by(Tickers) |>  
+mutate(RollSD = RcppRoll::roll_sd(1 + Returns, 36, fill = NA, align = "right") * 
+    sqrt(12)) |>  
+filter(!is.na(RollSD))
+
+g <- 
+plot_dlog %>%   
+ggplot() + 
+geom_line(aes(date, RollSD, color = Tickers),
+          alpha = 1, 
+          size = 1) + 
+labs(title = "") + 
+    theme_fmx(title.size = ggpts(30),
                               CustomCaption = F) + 
     
 fmx_cols()
