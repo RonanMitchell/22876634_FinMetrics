@@ -12,7 +12,7 @@ output:
     df_print: paged
 Author1: Ronan Morris
 Ref1: Stellenbosch University
-Email1: 22876634\\@sun.ac.za
+Email1: 22876634
 BottomRFooter: \footnotesize Page \thepage
 addtoprule: yes
 addfootrule: yes
@@ -206,10 +206,78 @@ ggplot(RetData,
 
 ```
 
+# Volatility
 
-# Data 
+```{r}
 
-```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
+rm(list = ls())
 
+Indexes <- read_rds("data/Cncy_Hedge_Assets.rds") 
+
+ZAR <- read_rds("data/Monthly_zar.rds") %>% 
+    filter(date >= as.Date(first(Indexes$date))) %>%
+    select(-Tickers)
+
+Weights <- c(0.18, 0.12, 0.42, 0.28)
+
+library(PerformanceAnalytics)
+library(RcppRoll)
+library(tbl2xts)
+
+### Plain ole rebalancing portfolio.
+
+RebalancedData <- Return.portfolio(
+    Indexes, weights = Weights, rebalance_on = "quarters") %>% 
+    xts_tbl(.) %>% 
+    mutate(RollSD = RcppRoll::roll_sd(1 + portfolio.returns, 
+                                      36, 
+                                      fill = NA, 
+                                      align = "right") * sqrt(12)) %>%  
+                                      filter(!is.na(RollSD))
+
+### Portfolio Including Rand
+
+ZAR <- ZAR %>% 
+    mutate(ZarRet = value/lag(value) - 1) %>% 
+    filter(date >= "2005-01-31") 
+
+RandRebalance <- RebalancedData %>% 
+    mutate(Hedged = (0.9*portfolio.returns + 0.1*ZAR$ZarRet))
+
+RandRebalance <- RandRebalance %>% 
+    mutate(RollSDHedged = RcppRoll::roll_sd(1 + Hedged, 
+                                      36, 
+                                      fill = NA, 
+                                      align = "right") * sqrt(12)) %>%  
+                                      filter(!is.na(RollSDHedged)) %>% 
+    select(date, RollSD, RollSDHedged) 
+
+###
+
+library(fmxdat)
+
+g <- 
+RandRebalance %>%
+  ggplot(aes(x = date)) +
+  geom_line(aes(y = RollSD), color = "blue4", size = 1) +
+  geom_line(aes(y = RollSDHedged), color = "red4", size = 1) +
+  labs(title = "Rolling Volatility",
+       x = "Date",
+       y = "Standard Deviation") +
+    theme_fmx(title.size = ggpts(30),
+              CustomCaption = F) + 
+    
+fmx_cols()
+
+finplot(g, x.date.dist = "1 year", x.date.type = "%Y", x.vert = T, 
+    y.pct = T, y.pct_acc = 1)
 
 ```
+
+```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = " \\label{Figure2.3}", fig.ext = 'png', fig.height = 3, fig.width = 6}
+
+finplot(g, x.date.dist = "1 year", x.date.type = "%Y", x.vert = T, 
+    y.pct = T, y.pct_acc = 1)
+
+```
+
