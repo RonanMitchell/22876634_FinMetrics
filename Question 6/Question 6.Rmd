@@ -176,6 +176,11 @@ QuarterDates %>% map_df(~Roller(ReturnMatrix,
                                 bvec = bvec, 
                                 LookBack = 24))
 
+```
+
+```{r Display, include=TRUE, echo=FALSE}
+
 head(PortfolioWeights, 15)
 
 ```
+
