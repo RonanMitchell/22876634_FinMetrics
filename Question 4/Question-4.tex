@@ -164,7 +164,7 @@
 
 \begin{frontmatter}  %
 
-\title{Question 2}
+\title{Question 4}
 
 % Set to FALSE if wanting to remove title (for submission)
 
@@ -217,64 +217,44 @@
 
 
 
-\hypertarget{replication-of-study}{%
-\section{Replication of Study}\label{replication-of-study}}
-
-As can be seen in figure 2.1, I have recreated the graphic from the
-study. The distributions of returns will be shown separately, in figure
-2.2. The graphic shows the negative relationship between the Rand/USD
-exchange rate and the returns of a portfolio which has a 60/40 equities
-to bonds ratio, while maintaining a 70/30 local to foreign ratio. This
-portfolio does not in and of itself include the rand. The plot is a
-ggplot object with a linear line of best fit estimated and standard
-errors included. As you can see, the best case scenario still only
-occurs around 9.31\% of the time, which is similar to the finding in the
-article. It is much more likely that the portfolio returns will be
-negative and the Rand/USD positive.
+\hypertarget{past-and-future-performance}{%
+\section{Past and Future
+Performance}\label{past-and-future-performance}}
 
 \begin{figure}[H]
 
-{\centering \includegraphics{Question-2_files/figure-latex/unnamed-chunk-3-1} 
+{\centering \includegraphics{Question-4_files/figure-latex/unnamed-chunk-1-1} 
 
 }
 
-\caption{ \label{Figure2.1}}\label{fig:unnamed-chunk-3}
+\caption{ \label{Figure4.1}}\label{fig:unnamed-chunk-1}
 \end{figure}
 
-In figure 2.2, we see the distribution of returns for the two funds or
-assets.This is also a ggplot object, and no functional transformation
-was performed on the returns (such as log). The Rand has substantially
-more extreme values than the weighted portfolio. Though the hypothesis
-is that a portfolio of a negatively correlated (and volatile) asset into
-a portfolio can actually result in a volatility which is less than the
-sum of its parts.
-
 \begin{figure}[H]
 
-{\centering \includegraphics{Question-2_files/figure-latex/unnamed-chunk-4-1} 
+{\centering \includegraphics{Question-4_files/figure-latex/unnamed-chunk-2-1} 
 
 }
 
-\caption{ \label{Figure2.2}}\label{fig:unnamed-chunk-4}
+\caption{ \label{Figure4.2}}\label{fig:unnamed-chunk-2}
 \end{figure}
 
-Below I once again used the rolling standard deviation methodology
-described in our tutorials/practicals. For this, I constructed a
-weighted portfolio once more, except I used the
-PerformanceAnalytics::Return.portfolio() function, re-balancing
-quarterly. For the ``including Rand'' standard deviation I simply used a
-weighted average of the returns of the re-balancing portfolio and the
-returns of the Rand, with a 90/10 split. Figure 2.3 shows that including
-the rand in the portfolio reduces the rolling volatility of the
-portfolio, even if it is only 10\% exposed to the Rand's volatility.
+\hypertarget{flows-and-past-returns}{%
+\section{Flows and Past Returns}\label{flows-and-past-returns}}
+
+\begin{verbatim}
+## [1] 19.9053
+\end{verbatim}
+
+\includegraphics{Question-4_files/figure-latex/Correlation-1.pdf}
 
 \begin{figure}[H]
 
-{\centering \includegraphics{Question-2_files/figure-latex/unnamed-chunk-6-1} 
+{\centering \includegraphics{Question-4_files/figure-latex/unnamed-chunk-3-1} 
 
 }
 
-\caption{ \label{Figure2.3}}\label{fig:unnamed-chunk-6}
+\caption{ \label{Figure4.3}}\label{fig:unnamed-chunk-3}
 \end{figure}
 
 \bibliography{Tex/ref}

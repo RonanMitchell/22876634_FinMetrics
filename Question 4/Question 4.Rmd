@@ -72,6 +72,8 @@ Data <- left_join(Flows, Rets, by = c("date", "Fund", "Index", "FoF")) %>%
              max(date) == as.Date("2023-09-30")) %>%
     ungroup()
 
+rm(list = c(Flows, Rets))
+
 ```
 
 ```{r Winners}
@@ -193,6 +195,8 @@ Data <- left_join(Flows, Rets, by = c("date", "Fund", "Index", "FoF")) %>%
              max(date) == as.Date("2023-09-30")) %>%
     ungroup()
 
+rm(list = c(Flows, Rets))
+
 ```
 
 ```{r Correlation}
@@ -267,5 +271,3 @@ ggplot(DataAverage, aes(x = AvgReturnsPast3Years, y = Flows)) +
   theme_bw()
 
 ```
-
-

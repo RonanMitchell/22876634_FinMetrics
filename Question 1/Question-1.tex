@@ -217,23 +217,117 @@
 
 
 
-\hypertarget{data-wrangling}{%
-\section{Data Wrangling}\label{data-wrangling}}
+\hypertarget{artificial-intelligence-or-active-management}{%
+\section{Artificial Intelligence or Active
+Management?}\label{artificial-intelligence-or-active-management}}
 
-\hypertarget{density-functions-with-fees}{%
-\section{Density Functions with
-Fees}\label{density-functions-with-fees}}
+For this question, I decided to focus on only dates after the global
+financial crisis. Firstly, the funds had different starting days and I
+wanted only funds that had existed for the entire time that the AI Fund
+had existed, so as to be able to meaningfully compare returns. I also
+thought that in a question about volatility and returns, it would be
+more fair to only look at the performance of different funds after the
+GFC. I also did not select all funds in the data set. For actively
+managed funds, I selected the best and worst performing funds over the
+time period (measured by average returns). I did the same methodology
+for Indices.
 
-\includegraphics{Question-1_files/figure-latex/unnamed-chunk-1-1.pdf}
-\includegraphics{Question-1_files/figure-latex/unnamed-chunk-1-2.pdf}
-\includegraphics{Question-1_files/figure-latex/unnamed-chunk-1-3.pdf}
+Below you find the distribution of returns for three funds. The S1007 is
+the best performing actively managed fund in this regard, whereas the
+V412 is the worst. It is pivotal to mention that these returns are fees
+adjusted for the actively managed funds (estimated as 2.5\% annualized).
+From this plot, we can see that the AI Fund outperforms the worst
+performing actively managed fund, while having a similar return
+distribution to the S1007. The S1007 does have a fatter tail on the high
+end, but it also faces more losses. The AI Fund also is more likely to
+yield mid-high level returns than either fund, it only lacks in extreme
+(high risk) regions.
 
-\hypertarget{rolling-returns}{%
-\section{Rolling Returns}\label{rolling-returns}}
+\begin{figure}[H]
 
-\includegraphics{Question-1_files/figure-latex/unnamed-chunk-2-1.pdf}
-\includegraphics{Question-1_files/figure-latex/unnamed-chunk-2-2.pdf}
-\includegraphics{Question-1_files/figure-latex/unnamed-chunk-2-3.pdf}
+{\centering \includegraphics{Question-1_files/figure-latex/unnamed-chunk-1-1} 
+
+}
+
+\caption{ \label{Figure1.1}}\label{fig:unnamed-chunk-1}
+\end{figure}
+
+The AI Fund could not outperform Indices. It has a similar return
+distribution to the ``worst'' index fund. It performs visibly worse than
+the best Index fund, even though these have been capped (1\%
+annualized).
+
+\begin{figure}[H]
+
+{\centering \includegraphics{Question-1_files/figure-latex/unnamed-chunk-2-1} 
+
+}
+
+\caption{ \label{Figure1.2}}\label{fig:unnamed-chunk-2}
+\end{figure}
+
+The AI Fund also has an incredibly similar returns distribution to the
+Capped SWIX, which is the benchmark return series for this study. It
+does have fatter tails, or rather, more extreme values, but this is paid
+off by the potential for slightly higher returns than the benchmark.
+
+\begin{figure}[H]
+
+{\centering \includegraphics{Question-1_files/figure-latex/unnamed-chunk-3-1} 
+
+}
+
+\caption{ \label{Figure1.3}}\label{fig:unnamed-chunk-3}
+\end{figure}
+
+Out of the selected funds (the benchmark, the best and worst Index, and
+best and worst Actively managed fund), the AI Fund performs the second
+best. This cumulative return plot did not account for fees, however. The
+AI Fund consistently outperforms the benchmark rate. Notice that active
+management might seem attractive due to the presence of the best
+performing fund as one that is active, but the worst performing fund is
+also one which is active. I argue that the AI Fund offers a far better
+risk adjusted return.
+
+\begin{figure}[H]
+
+{\centering \includegraphics{Question-1_files/figure-latex/unnamed-chunk-5-1} 
+
+}
+
+\caption{ \label{Figure1.4}}\label{fig:unnamed-chunk-5}
+\end{figure}
+
+In terms of rolling average returns (3 year), one could still argue that
+the AI Fund is the second best performing, with large periods of time
+outperforming the benchmark rate, and either outperforming, or
+performing similarly, to other funds. Once again, active management has
+the best (and worst) return, which is a large risk to take.
+
+\begin{figure}[H]
+
+{\centering \includegraphics{Question-1_files/figure-latex/unnamed-chunk-6-1} 
+
+}
+
+\caption{ \label{Figure1.5}}\label{fig:unnamed-chunk-6}
+\end{figure}
+
+If you look at the rolling standard deviation (3 year), the point about
+risk is exhibited excellently. Since 2020, both the best and worst
+actively managed fund have had higher levels of volatility than the AI
+Fund. The AI fund has passed the COVID volatility hurdle with incredibly
+consistency, maintaining a lower volatility than even the benchmark at
+times.
+
+\begin{figure}[H]
+
+{\centering \includegraphics{Question-1_files/figure-latex/unnamed-chunk-7-1} 
+
+}
+
+\caption{ \label{Figure1.6}}\label{fig:unnamed-chunk-7}
+\end{figure}
 
 \bibliography{Tex/ref}
 
