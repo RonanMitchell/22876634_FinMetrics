@@ -12,7 +12,7 @@ output:
     df_print: paged
 Author1: Ronan Morris
 Ref1: Stellenbosch University
-Email1: 22876634\\@sun.ac.za
+Email1: 22876634
 BottomRFooter: \footnotesize Page \thepage
 addtoprule: yes
 addfootrule: yes
@@ -272,7 +272,7 @@ Large <- indices_roll_ret %>%
               alpha = alpha) +
     geom_line(aes(date, RollRets, colour = Methodod), 
                   alpha = 0.8,
-                  size = 1) + 
+                  size = 0.5) + 
      fmxdat::fmx_cols() + 
         labs(title = "Large Cap Shares", 
              y = "",
@@ -344,7 +344,7 @@ Mid <- indices_roll_ret %>%
               alpha = alpha) +
     geom_line(aes(date, RollRets, colour = Methodod), 
                   alpha = 0.8,
-                  size = 1) + 
+                  size = 0.5) + 
      fmxdat::fmx_cols() + 
         labs(title = "Mid Cap Shares", 
              y = "",
@@ -416,7 +416,7 @@ Small <- indices_roll_ret %>%
               alpha = alpha) +
     geom_line(aes(date, RollRets, colour = Methodod), 
                   alpha = 0.8,
-                  size = 1) + 
+                  size = 0.5) + 
      fmxdat::fmx_cols() + 
         labs(title = "Small Cap Shares", 
              y = "",
@@ -655,8 +655,8 @@ geom_line(aes(date,
 labs(subtitle = "ALSI (10%) & SWIX (6%)", 
      x = "", 
      y = "") + 
-    fmx_cols() + 
-fmxdat::theme_fmx(subtitle.size = ggpts(20))
+    fmx_cols() +
+fmxdat::theme_fmx()
 
 g2 <- AlsiSwix %>% 
     group_by(Method) %>%
@@ -724,23 +724,19 @@ g2 <- AlsiSwix %>%
 geom_line(aes(date, Idx, colour = Method), alpha = 0.9) + 
 labs(subtitle = "Uncapped (ALSI & SWIX)", 
      x = "", 
-     y = "") + 
-    fmx_cols() + 
-fmxdat::theme_fmx(subtitle.size = ggpts(20))
+     y = "") +
+fmxdat::theme_fmx()
 
 ```
 
 ```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = " \\label{Figure3.4}", fig.ext = 'png', fig.height = 3, fig.width = 6}
 
-grid.arrange(finplot(g1), 
-             finplot(g2))
+g1
 
 ```
 
-# Data 
+```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = " \\label{Figure3.5}", fig.ext = 'png', fig.height = 3, fig.width = 6}
 
-```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
-
+g2
 
 ```
-

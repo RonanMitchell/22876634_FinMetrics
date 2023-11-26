@@ -59,7 +59,163 @@ Flows <- read_rds("data/ASISA_Flows.rds") %>%
   mutate(Fund = str_trim(Fund)) %>%
   filter(Fund %in% unique(Rets$Fund)) 
 
+# I only want funds that have existed over the entire time period. 
+
+# Here I am getting the 36 month lagged returns. 
+
+Data <- left_join(Flows, Rets, by = c("date", "Fund", "Index", "FoF")) %>% 
+    na.omit() %>% 
+    filter(Index == "No") %>% 
+    group_by(Fund) %>%
+    filter(min(date) == as.Date("2003-10-31") & 
+             max(date) == as.Date("2023-09-30")) %>%
+    ungroup()
+
 ```
+
+```{r}
+
+library(dplyr)
+library(ggplot2)
+
+WinnersComparison <- function(Data, start_date, end_date, next_date) {
+    
+  # Calculate overall mean return during the first period
+    
+  threshold <- Data %>%
+    filter(date >= start_date & date <= end_date) %>%
+    summarise(threshold = quantile(Returns, 0.8)) %>%
+    pull()
+
+  # Filter the dataset to include only funds meeting the decided criteria in the first period.
+  
+  Data1 <- Data %>%
+    filter(date >= start_date & date <= end_date) %>%
+    group_by(Fund) %>%
+    filter(mean(Returns) > threshold) %>%
+    ungroup()
+
+  # Filter the dataset for the second period, but simply get the funds who previously performed well, not the ones who currently performed well. 
+  
+  Data2 <- Data %>% 
+    filter(date >= end_date & date <= next_date &
+           Fund %in% unique(Data1$Fund))
+
+  # Create a data frame for plotting.
+  
+  plot_data <- data.frame(
+    Variable = rep(c("Winners", "Subsequent"), 
+                   each = c(nrow(Data1), nrow(Data2))),
+    Returns = c(Data1$Returns, Data2$Returns)
+  )
+  
+  return(plot_data)
+}
+
+# Get unique dates from the original dataset.
+
+unique_dates <- sort(unique(Data$date))
+
+# Apply the function to generate plot data for each date range.
+
+plot_data_list <- lapply(1:(length(unique_dates)-2), function(i) {
+  start_date <- unique_dates[i]
+  end_date <- unique_dates[i + 1]
+  next_date <- unique_dates[i + 2]
+  
+  # Call the function and generate the plot data.
+  
+  WinnersComparison((Data %>% filter(Index == "No")), start_date, end_date, next_date)
+})
+
+# Combine the plot data into a single data frame.
+
+combined_plot_data <- do.call(rbind, plot_data_list)
+
+# Create a density plot using ggplot for the combined data.
+
+ggplot(combined_plot_data, aes(x = Returns, fill = Variable)) +
+  geom_density(alpha = 0.6) +
+  labs(title = "Distribution of Winners and Subsequent Performance",
+       x = "",
+       y = "") +
+  scale_fill_manual(values = c("Winners" = "lightblue", 
+                               "Subsequent" = "red4")) +
+     xlim(c(-0.1, 0.16)) +
+    guides(fill = guide_legend(title = "")) +
+  theme_bw()
+
+```
+
+```{r}
+
+LosersComparison <- function(Data, start_date, end_date, next_date) {
+    
+  # Calculate overall mean return during the first period
+    
+  threshold <- Data %>%
+    filter(date >= start_date & date <= end_date) %>%
+    summarise(threshold = quantile(Returns, 0.2)) %>%
+    pull()
+
+  # Filter the dataset to include only funds meeting the decided criteria in the first period.
+  
+  Data1 <- Data %>%
+    filter(date >= start_date & date <= end_date) %>%
+    group_by(Fund) %>%
+    filter(mean(Returns) < threshold) %>%
+    ungroup()
+
+  # Filter the dataset for the second period, but simply get the funds who previously performed well, not the ones who currently performed well. 
+  
+  Data2 <- Data %>% 
+    filter(date >= end_date & date <= next_date &
+           Fund %in% unique(Data1$Fund))
+
+  # Create a data frame for plotting.
+  
+  plot_data <- data.frame(
+    Variable = rep(c("Losers", "Subsequent"), 
+                   each = c(nrow(Data1), nrow(Data2))),
+    Returns = c(Data1$Returns, Data2$Returns)
+  )
+  
+  return(plot_data)
+}
+
+# Repeat the Process. 
+
+unique_dates <- sort(unique(Data$date))
+
+plot_data_list <- lapply(1:(length(unique_dates)-2), function(i) {
+  start_date <- unique_dates[i]
+  end_date <- unique_dates[i + 1]
+  next_date <- unique_dates[i + 2]
+  
+  # Call the function and generate the plot data.
+  
+  LosersComparison((Data %>% filter(Index == "No")), start_date, end_date, next_date)
+})
+
+# Repeat the process. 
+
+combined_plot_data <- do.call(rbind, plot_data_list)
+
+# Create a density plot using ggplot for the combined data.
+
+ggplot(combined_plot_data, aes(x = Returns, fill = Variable)) +
+  geom_density(alpha = 0.6) +
+  labs(title = "Distribution of Losers and Subsequent Performance",
+       x = "",
+       y = "") +
+  scale_fill_manual(values = c("Losers" = "red4", 
+                               "Subsequent" = "lightblue")) +
+     xlim(c(-0.15, 0.15)) +
+    guides(fill = guide_legend(title = "")) +
+  theme_bw()
+
+```
+
 
 # Data 
 
