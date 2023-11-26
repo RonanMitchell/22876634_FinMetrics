@@ -54,6 +54,8 @@ library(fitHeavyTail)
 
 rm(list = ls())
 
+gc()
+
 source('code/Impute_Missing_Returns.R') # This function is essentially from the practical offered by Nico. 
 
 source('code/Optimisation_Function.R')
@@ -65,25 +67,28 @@ source('code/Roller_Function.R')
 MAA <- read_rds("data/MAA.rds") %>% 
     select(-Name) %>% 
     arrange(date) %>% 
-    rename(Tickers = Ticker)
+    rename(Tickers = Ticker) %>% 
+    filter(date >= "2010-01-01")
 
 msci <- read_rds("data/msci.rds") %>%
         filter(Name %in% c("MSCI_ACWI", 
                            "MSCI_USA", 
                            "MSCI_RE", 
                            "MSCI_Jap")) %>% 
+        filter(date >= "2010-01-01") %>% 
         rename(Tickers = Name) %>% 
-        arrange(date)
+        arrange(date) 
     
-# Here I am trying to seperate and combine all the different asset classes mentioned in the question. 
+# Here I am trying to separate and combine all the different asset classes mentioned in the question. 
 
-Combined_assets <- rbind(MAA, msci) %>% arrange(date)
+Combined_assets <- rbind(MAA, msci) %>% 
+    arrange(date)
 
 CombAss3Yr <- Combined_assets %>% 
     group_by(Tickers) %>% 
     filter(date == as.Date("2018/01/01")) %>% 
     pull(Tickers) %>% 
-    unique()
+    unique() # last three years
     
 Start <- Combined_assets %>% 
     filter(Tickers %in% CombAss3Yr) %>% 
@@ -91,7 +96,7 @@ Start <- Combined_assets %>%
     summarise(date = dplyr::first(date)) %>%
     summarise(latest = dplyr::first(date))
 
-# Now I need to focus on getting the dates in order to perform rebalancing. 
+# Now I need to focus on getting the dates in order to perform re-balancing. 
 
 DateVector <- Combined_assets %>% 
     filter(Tickers %in% CombAss3Yr) %>% 
@@ -105,11 +110,11 @@ DateVector <- Combined_assets %>%
     pull(date) %>% 
     unique
 
-# But the rebalancing actually seems to be quarterly. 
+# But the re-balancing actually seems to be quarterly. 
 
 DateVector # To get the first and last date!
 
-QuarterDates <- rmsfuns::dateconverter(as.Date("2002-01-31"), 
+QuarterDates <- rmsfuns::dateconverter(as.Date("2010-01-31"), 
                                        as.Date("2021-10-29"), 
                                        "weekdayEOQ") 
 
@@ -130,14 +135,16 @@ Combined_assets <- Combined_assets %>%
 options(scipen = 999)
 
 ReturnMatrix <- 
-  impute_missing_returns(Combined_assets, impute_returns_method = "Drawn_Distribution_Collective", Seed = as.numeric(format( Sys.time(), "%Y%d%H%M")))
+  impute_missing_returns(Combined_assets, 
+  impute_returns_method = "Drawn_Distribution_Collective", 
+  Seed = as.numeric(format( Sys.time(), "%Y%d%H%M")))
 
 RetMatDateless <- data.matrix(ReturnMatrix[, -1])
 
 # Constraints
 
-LB = 0.01
-UB = 0.4
+LB = 0.01 # it is a long only portfolio
+UB = 0.2 # do not want too much of a good thing 
 Equities = 0.6 
 Bonds = 0.25
 meq = 1
@@ -160,7 +167,7 @@ Amat <- cbind(1,
               -diag(Stonks), 
               EquiMat, BondMat)
 
-# Calculate optimal rolling weights for each type of portfolio optimization
+# Calculate optimal rolling weights for each type of portfolio optimization, which makes use of a function I created. 
 
 PortfolioWeights <- 
 QuarterDates %>% map_df(~Roller(ReturnMatrix, 

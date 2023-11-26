@@ -221,6 +221,45 @@
 \section{Past and Future
 Performance}\label{past-and-future-performance}}
 
+My first goal was to show whether past performance is a good indicator
+of future performance. I wanted to show this in an intuitive way. I
+think plotting the distribution of past winners' returns against the
+distribution of those same past winners' subsequent years' returns is a
+good idea, because likely you will see a sort of reversion to the mean.
+I only used actively managed funds that showed valid returns over the
+entire time period selected. I believe that a three year average of
+returns, and selecting those winners that performed in the top quantile
+of these returns (top 20\% of 3 year average returns) ans then seeing
+how these same funds performed in the three years after their winning
+periods, was a good methodology.
+
+For this, I required a function that could be applied to all dates in
+the data set, after 2006 (the first period that three year average
+returns would become available). I created WinnersComparison(), a
+function that takes as its input a data set, a start date, middle date,
+and end date. Between start and middle, the three year average returns
+are calculated, and during middle and end, the subsequent three year
+returns of the same funds is calculated. This can then be mapped onto
+all dates in the provided data set by lapply(). I only piped into this
+function actively managed funds, because Indices track, and as such it
+is not necessarily as ``lauded'' if they over-perform, as this is not
+their goal. I also created LosersComparison(), which simply creates the
+same data set as the winners function, except it selects and applies
+this for those performers who had 3 year average returns in the bottom
+20\% at any arbitrary date.
+
+In figure 4.1 we see that winners do indeed visibly outperform their
+other years (which, due to the functions mentioned, is true across all
+dates). This means that on average, it is not true that winners with
+good returns distributions for three years on average tend to follow
+this up with another three year average of good returns. They revert to
+the mean, and we can conclude that above average three year performance
+is not a good indicator of the following three years also being good.
+This can also imply that if someone were to change their strategy, and
+put their money with such a ``winner'', they will more than likely
+experience a relative loss considering that the ``winner'' will probably
+just revert to the mean.
+
 \begin{figure}[H]
 
 {\centering \includegraphics{Question-4_files/figure-latex/unnamed-chunk-1-1} 
@@ -229,6 +268,18 @@ Performance}\label{past-and-future-performance}}
 
 \caption{ \label{Figure4.1}}\label{fig:unnamed-chunk-1}
 \end{figure}
+
+Figure 4.2 shows similar information, except that, across all dates and
+funds, losers also tend to revert back to the mean. This means that if
+someone performs in the bottom 20\% for a three year average, they
+likely will simply revert to the mean and perform better in the
+subsequent three years. What should be learned from this is that the
+past performance is generally, in either direction, not a good indicator
+of future success or failure. The investment strategy should not merely
+depend on whether someone has succeeded or failed in the past. So the
+question becomes now, do investors know this? Do funds flow more to
+funds that have done well, and flow away from those that have done
+badly?
 
 \begin{figure}[H]
 
@@ -239,14 +290,14 @@ Performance}\label{past-and-future-performance}}
 \caption{ \label{Figure4.2}}\label{fig:unnamed-chunk-2}
 \end{figure}
 
-\hypertarget{flows-and-past-returns}{%
-\section{Flows and Past Returns}\label{flows-and-past-returns}}
-
-\begin{verbatim}
-## [1] 19.9053
-\end{verbatim}
-
-\includegraphics{Question-4_files/figure-latex/Correlation-1.pdf}
+Figure 4.3 shows a mixed opinion on this front. There is indeed a small
+correlation between past average returns (over 3 years) and receiving
+flows today. I fitted a line of best fit across the data, which can be
+viewed. Similarly, I created four quadrants on the plane. Essentially,
+this can be split into where returns are above (below) the median, and
+where flows are above (below) zero. Each quadrant sees between 20-30\%
+of the data, which implies that though there might be a correlation, it
+is weak - as it should be.
 
 \begin{figure}[H]
 

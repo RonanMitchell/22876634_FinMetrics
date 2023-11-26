@@ -31,6 +31,9 @@ linestretch: 1.2
 link-citations: yes
 AddTitle: yes
 ---
+
+# Portfolio Construction
+
 ```{r setup, include=FALSE}
 
 rm(list = ls())
@@ -46,6 +49,11 @@ if(!require("tidyverse")) install.packages("tidyverse")
 
 rm(list = ls())
 
+library(tidyverse)
+library(fmxdat)
+library(RcppRoll)
+library(gridExtra)
+
 # Loading in data
 
 ALSI <- read_rds("data/ALSI.rds")
@@ -57,11 +65,6 @@ RebDays <- read_rds("data/Rebalance_days.rds") %>%
 
 pacman::p_load(tbl2xts, PerformanceAnalytics)
 
-library(tidyverse)
-library(fmxdat)
-library(RcppRoll)
-library(gridExtra)
-
 ###
 
 source('code/PortReturn.R')
@@ -69,6 +72,10 @@ source('code/PortReturn.R')
 source('code/Proportional_Cap_Foo.R') # Nico function
 
 ```
+
+I began this question by perusing the ZAR/USD exchange rate, and searching periods with the highest volatility. This would result in volatile years (defined as years with ZAR volatility that placed in the top 3rd of all years' volatility) and low volatility years (measured as years with a ZAR volatility in the bottom third of the rankings). The high volatility years were 2016, 2018, 2020, and 2023. The low volatility years were 2014, 2015, 2017, 2021.
+
+I decided I would shade the years as red (high vol) and green (low vol) on all ggplot objects created from the portfolio returns in this question. This allowed a seamless discussion not only on how different methodologies compared to one another, across cap sizes or whether the funds or uncapped; it also allowed for a discussion about how these funds and assets respond to volatility in the rand. 
 
 ```{r Volatility periods in Rand}
 
@@ -425,6 +432,8 @@ Small <- indices_roll_ret %>%
 
 ```
 
+Figure 3.1 shows the 3-year rolling returns of the J403 and the J203 from 2013 until 2023. This plot only shows the returns for large cap stocks. I would argue that - though these funds are not particularly volatile - we see that during high volatility years, there is often dips to the rolling returns, and sometimes these are quite drastic. One would presume that large cap stocks are less exposed to huge fluctuations than less supported stocks. The fund methodologies perform similarly over the time period for large cap stocks, but I would mention that there are times that the J203 experiences higher highs, but also marginally lower lows, such as end of 2015 followed by later 2016. 
+
 ```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = "Large Cap Stocks \\label{Figure3.1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
 
 finplot(Large, 
@@ -435,6 +444,8 @@ finplot(Large,
         y.pct_acc = 1)
 
 ```
+
+The plot of the 3 year rolling returns of mid cap shares in figure 3.2 exhibits more volatility. We see clear spikes and troughs during 2016 and 2020, with a sharp decline also present in 2018, though this is of a similar size to troughs in 2015, which was a low volatility year for the rand. What is of note here is that the rolling returns for the J203 and J403 for mid cap shares is almost identical at each point. 
 
 ```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = "Mid Cap Stocks \\label{Figure3.2}", fig.ext = 'png', fig.height = 3, fig.width = 6}
 
@@ -447,6 +458,8 @@ finplot(Mid,
 
 ```
 
+The methodologies once again perform similarly in terms of 3 year rolling returns for small cap stocks in figure 3.3. The small caps also show extreme spikes in 2016 and lows in 2020, which are branded as high volatility years. Similarly there is a downturn in 2018 and very small returns in 2023. 
+
 ```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = "Small Cap Stocks \\label{Figure3.3}", fig.ext = 'png', fig.height = 3, fig.width = 6}
 
 finplot(Small, 
@@ -457,6 +470,8 @@ finplot(Small,
         y.pct_acc = 1)
 
 ```
+
+Next I applied capping to each of the J203 and J403, with the ALSI capped at 10% and the SWIX capped at 5%. The cumulative returns for this are shown in figure 3.4. The re-balancing was performed by using the effective dates in the data set provided over the time period discussed. The ggplot object is once again shown with high volatility and low volatility time periods in order to further the discussion. In the context of the full J203 and J403, with cumulative returns, the volatility discussion becomes clear. The capped performance seems to benefit the ALSI, considering that from around 2017 it steadily outperforms the SWIX. We see that both steadily climb during the "green" years into 2016, were there is a plateau. They climb once more in 2017 just to be stopped in 2018, and show extreme decreases during 2020, and a slowdown after climbing during low volatility years preceding 2023. 
 
 ```{r Capped Portfolio}
 
@@ -652,7 +667,7 @@ geom_line(aes(date,
               Idx, 
               colour = Method), 
           alpha = 0.9) + 
-labs(subtitle = "ALSI (10%) & SWIX (6%)", 
+labs(subtitle = "ALSI (10%) & SWIX (5%)", 
      x = "", 
      y = "") + 
     fmx_cols() +
@@ -734,6 +749,8 @@ fmxdat::theme_fmx()
 g1
 
 ```
+
+When we compare the uncapped portfolio returns, we see that the ALSI takes longer to overtake the SWIX, but it still eventually does. This implies that the ALSI stands to benefit more from the capping procedure whereas the SWIX benefits for a slightly longer period of time with the uncapped methodology. The volatility in these years follows patterns previously discussed. 
 
 ```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = " \\label{Figure3.5}", fig.ext = 'png', fig.height = 3, fig.width = 6}
 

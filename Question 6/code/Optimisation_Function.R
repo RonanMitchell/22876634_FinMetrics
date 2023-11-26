@@ -25,15 +25,6 @@ Optimisation <- function(type = "mv",
                        bvec = bvec,
                        meq = meq)
     }
-    if(type == "maxdecor"){
-        Rho <- cov2cor(Sigma)
-        w.opt <-
-            Safe_Optim(Dmat = Sigma,
-                       dvec = rep(0, nrow(Sigma)),
-                       Amat = Amat,
-                       bvec = bvec,
-                       meq = meq)
-    }
     if(type == "sharpe"){
         Amat[,1] <- mu
         w.opt <- Safe_Optim(Dmat = Sigma,

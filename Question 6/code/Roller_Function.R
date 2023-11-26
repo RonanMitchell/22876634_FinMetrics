@@ -20,8 +20,6 @@ Roller <- function(ReturnMatrix, DateVector, LookBack = 24, Amat, bvec){
         Optimisation(type = "mv", mu, Sigma, bvec, Amat, printmsg = F),
         Optimisation(type = "minvol", mu, Sigma, bvec, Amat, printmsg = F),
         by = "stocks") %>%
-        left_join(., Optimisation(type = "maxdecor", mu, Sigma, bvec, Amat, printmsg = F),
-                  by = "stocks") %>%
         left_join(., Optimisation(type = "sharpe", mu, Sigma, bvec, Amat, printmsg = F),
                   by = "stocks") %>%
         mutate(date = DateVector , Look_Back_Period = LookBack)
