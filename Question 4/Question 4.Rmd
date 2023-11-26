@@ -48,6 +48,19 @@ library(tidyverse)
 
 ```
 
+```{r}
+
+rm(list = ls())
+
+Rets <- read_rds("data/ASISA_Rets.rds") %>%
+  mutate(Fund = str_trim(Fund)) 
+
+Flows <- read_rds("data/ASISA_Flows.rds") %>%
+  mutate(Fund = str_trim(Fund)) %>%
+  filter(Fund %in% unique(Rets$Fund)) 
+
+```
+
 # Data 
 
 ```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure1}", fig.ext = 'png', fig.height = 3, fig.width = 6}

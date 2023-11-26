@@ -33,10 +33,6 @@ list.files('Question 5/code/', full.names = T, recursive = T) %>% .[grepl('.R', 
 
 list.files('Question 6/code/', full.names = T, recursive = T) %>% .[grepl('.R', .)] %>% as.list() %>% walk(~source(.))
 
-list.files('Question 7/code/', full.names = T, recursive = T) %>% .[grepl('.R', .)] %>% as.list() %>% walk(~source(.))
-
-###
-
 ```
 
 

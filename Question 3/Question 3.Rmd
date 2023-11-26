@@ -44,64 +44,743 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width 
 
 if(!require("tidyverse")) install.packages("tidyverse")
 
-```
+rm(list = ls())
 
-```{r}
-
-rm(list=ls())
-
-library(tidyverse)
+# Loading in data
 
 ALSI <- read_rds("data/ALSI.rds")
 
-ZAR <- read_rds("data/Monthly_zar.rds") %>% 
-    filter(date >= first(ALSI$date))
-
-SWIX <- read_rds("data/Capped_SWIX.rds") %>% 
-    filter(date >= first(ALSI$date) & date <= last(ZAR$date))
-
 RebDays <- read_rds("data/Rebalance_days.rds") %>% 
-    filter(date >= first(ALSI$date) & date <= last(ZAR$date)) %>% 
-    filter(!Date_Type == "Effective Date")
+    filter(date >= first(ALSI$date) & 
+               Date_Type == "Effective Date" &
+               date <= last(ALSI$date))
 
-ALSI <- ALSI %>% 
-    filter(date <= last(ZAR$date)) %>% 
-    na.omit()
+pacman::p_load(tbl2xts, PerformanceAnalytics)
 
-### Converting the ALSI into monthly data so that I can compare. 
-
-monthlyALSI <- ALSI %>%
-  group_by(Tickers, year_month = format(date, "%Y-%m")) %>%
-  summarise(
-    Returns = (prod(1 + Return) - 1),
-    J203 = first(J203),
-    J403 = first(J403),
-    Sector = first(Sector),
-    Index_Name = last(Index_Name),
-    date = last(date)
-  ) %>% ungroup() %>% 
-    select(-year_month)
-
-# Filter Into Large 
-
-LargeALSI <- monthlyALSI %>% 
-    filter(Index_Name == "Large_Caps")
-
-# Filter Into Mid
-
-MidALSI <- monthlyALSI %>% 
-    filter(Index_Name == "Mid_Caps")
-
-# Filter into Small 
-
-Smalsi <- monthlyALSI %>% 
-    filter(Index_Name == "Small_Caps")
+library(tidyverse)
+library(fmxdat)
+library(RcppRoll)
+library(gridExtra)
 
 ```
 
-```{r}
+```{r Volatility periods in Rand}
 
+# Simply want to find high volatility years for the ZAR and add them to the ggplots later. I have chosen not to stratify; time pressure is a factor but also, I think that the graph at the end of this will be pretty neat. 
+
+ZAR <- read_rds("data/Monthly_zar.rds") %>%
+    select(-Tickers) %>% 
+    mutate(Return = value/lag(value) - 1) %>% 
+    filter(date >= first(ALSI$date)) %>% 
+    select(-c(value)) %>% 
+    na.omit()
+
+ZARSD <- ZAR %>% 
+  
+  mutate(Year = format(date, "%Y")) %>% 
+  
+  group_by(Year) %>% summarise(SD = sd(Return)*sqrt(12)) %>% 
+  
+  mutate(TopQtile = quantile(SD, 0.67),
+         
+         BotQtile = quantile(SD, 0.33))
+
+Hi_Vol <- ZARSD %>% filter(SD > TopQtile) %>% pull(Year)
+
+# 2016, 2018, 2020, and 2023 are high volatility years. 
+
+Low_Vol <- ZARSD %>% filter(SD < BotQtile) %>% pull(Year)
+
+# 2014, 2015, 2017, 2021 are low volatility years. 
+
+```
+
+```{r Portfolio Returns}
+
+# Eventhough I only use it once, i decided that a function would be best suited to this question because of how many times it had to be rerun and edited. 
+
+PortReturn <- function(data = ALSI, index = ""){
+    
+    fund <- data
  
+    if(!index == ""){
+        fund <- data %>% filter(Index_Name %in% index) %>% 
+            group_by(date) %>% 
+            mutate(J403 = J403/sum(J403, na.rm = TRUE), 
+                   J203 = J203/sum(J203, na.rm = TRUE)) %>% 
+            ungroup()
+    } 
+    
+    J203_weights <- fund %>% 
+        select(date, Tickers, J203) %>%
+        mutate(J203 = coalesce(J203, 0)) %>%
+        spread(Tickers, J203) %>% 
+        tbl_xts()
+    
+    J203_weights[is.na(J203_weights)] <- 0
+    
+    # J403 Now
+    
+    J403_weights <- fund %>% 
+        select(date, Tickers, J403) %>% 
+        spread(Tickers, J403) %>% 
+        tbl_xts()
+    
+    J403_weights[is.na(J403_weights)] <- 0
+    
+    ###
+    
+    FundRet <- fund %>% 
+        select(date, Tickers, Return) %>% 
+        spread(Tickers, Return)
+    
+    FundRet[is.na(FundRet)] <- 0
+    
+    FundRet_xts <- FundRet %>% 
+        tbl_xts() # to get it into the correct format for packages. 
+    
+    ###
+    
+    J203_RetPort <- rmsfuns::Safe_Return.portfolio(FundRet_xts,
+    weights = J203_weights, 
+    lag_weights = TRUE,
+    contribution = TRUE, 
+    verbose = TRUE,
+    value = 1, 
+    geometric = TRUE)
+    
+    J403_RetPort <- rmsfuns::Safe_Return.portfolio(R = FundRet_xts,
+    weights = J403_weights, 
+    lag_weights = TRUE,
+    contribution = TRUE, 
+    verbose = TRUE,
+    value = 1, 
+    geometric = TRUE)
+    
+    # Clean and save portfolio returns and weights:
+    
+    J203Cont <- J203_RetPort$"contribution" %>% 
+        xts_tbl() %>%
+        mutate(date = lag(date), 
+               date = coalesce(date, index(J203_weights)[1]) )
+
+    J203BPWeight <- J203_RetPort$"BOP.Weight" %>% 
+        xts_tbl() %>%
+        mutate(date = lag(date), 
+               date = coalesce(date, index(J203_weights)[1]) )
+    
+    J203BPValue <- J203_RetPort$"BOP.Value" %>%
+        xts_tbl() %>% 
+        mutate(date = lag(date), 
+               date = coalesce(date, index(J203_weights)[1]) )
+    
+        # Clean and save portfolio returns and weights:
+    
+    J403Cont <- J403_RetPort$"contribution" %>%
+        xts_tbl() %>%
+        mutate(date = lag(date), 
+               date = coalesce(date, index(J403_weights)[1]) )
+    
+    J403BPWeight <- J403_RetPort$"BOP.Weight" %>% 
+        xts_tbl() %>%
+        mutate(date = lag(date), 
+               date = coalesce(date, index(J403_weights)[1]) )
+    
+    J403BPValue <- J403_RetPort$"BOP.Value" %>% 
+        xts_tbl() %>% 
+        mutate(date = lag(date), 
+               date = coalesce(date, index(J403_weights)[1]) )
+
+    # This procedure below I essentially got from the practical. 
+
+names(J203Cont) <- c("date", names(J203_RetPort$"contribution"))
+names(J203BPWeight) <- c("date", names(J203_RetPort$"BOP.Weight"))
+names(J203BPValue) <- c("date", names(J203_RetPort$"BOP.Value"))
+names(J403Cont) <- c("date", names(J403_RetPort$"contribution"))
+names(J403BPWeight) <- c("date", names(J403_RetPort$"BOP.Weight"))
+names(J403BPValue) <- c("date", names(J403_RetPort$"BOP.Value"))
+
+# Bind all together: 
+
+df_port_return_J203 <-
+left_join(fund %>% select(date, Tickers, Return),
+J203BPWeight %>% gather(Tickers, weight, -date),
+by = c("date", "Tickers") ) %>%
+left_join(.,
+J203BPValue %>% gather(Tickers, value_held, -date),
+by = c("date", "Tickers") ) %>%
+left_join(.,
+J203Cont %>% gather(Tickers, Contribution, -date),
+by = c("date", "Tickers"))
+
+df_port_return_J403 <-
+left_join(fund %>% select(date, Tickers, Return),
+J403BPWeight %>% gather(Tickers, weight, -date),
+by = c("date", "Tickers") ) %>%
+left_join(.,
+J403BPValue %>% gather(Tickers, value_held, -date),
+by = c("date", "Tickers") ) %>%
+left_join(.,
+J403Cont %>% gather(Tickers, Contribution, -date),
+by = c("date", "Tickers"))
+
+# Calculate Rolling Portfolio Returns:
+
+df_Portf_J203 <- df_port_return_J203 %>% 
+    group_by(date) %>% 
+    summarise(PortfolioReturn = sum(Return*weight, na.rm = TRUE)) %>% 
+    filter(PortfolioReturn != 0)
+
+df_Portf_J403 <- df_port_return_J403 %>% 
+    group_by(date) %>% 
+    summarise(PortfolioReturn = sum(Return*weight, na.rm = TRUE)) %>% 
+    filter(PortfolioReturn != 0)
+
+###
+    
+Output <- left_join(df_Portf_J203 %>% rename(J203 = PortfolioReturn), 
+                 df_Portf_J403 %>%  rename(J403 = PortfolioReturn), 
+                 by = "date") %>% 
+       pivot_longer(c("J203", "J403"),
+                    names_to = "Method", 
+                    values_to = "Returns")
+
+Output
+
+}
+
+# Compare
+
+Indexes <- ALSI %>%  pull(Index_Name) %>% na.omit(.) %>%  unique()
+
+IndRet <- list()
+
+for(i in 1:length(Indexes)){
+ 
+    IndRet[[i]] <- PortReturn(ALSI,index = Indexes[i]) %>% 
+        group_by(Method) %>% 
+    mutate(RollRets = RcppRoll::roll_prod(1 + Returns, 
+                                          36, 
+                                          fill = NA, 
+                                          align = "right")^(12/36) - 1) %>%   
+    group_by(date) %>%   
+    filter(any(!is.na(RollRets))) %>%
+    mutate(Index = Indexes[i])
+}
+
+names(IndRet) <- Indexes
+
+indices_roll_ret <- rbind(IndRet[[1]],
+                          IndRet[[2]], 
+                          IndRet[[3]]) %>% 
+    arrange(date)
+    
+### Make Plots
+
+# Ranges: 
+
+   # High Vol
+
+HV1 <- data.frame(
+  xmin = as.Date("2016-01-01"),
+  xmax = as.Date("2016-12-01"),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+HV2 <- data.frame(
+  xmin = as.Date("2018-01-01"),
+  xmax = as.Date("2018-12-01"),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+HV3 <- data.frame(
+  xmin = as.Date("2020-01-01"),
+  xmax = as.Date("2020-12-01"),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+HV4 <- data.frame(
+  xmin = as.Date("2023-01-01"),
+  xmax = as.Date("2023-12-01"),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+# Low vol 
+
+LV1 <- data.frame(
+  xmin = as.Date("2014-01-01"),
+  xmax = as.Date("2014-12-01"),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+LV2 <- data.frame(
+  xmin = as.Date("2015-01-01"),
+  xmax = as.Date("2015-12-01"),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+LV3 <- data.frame(
+  xmin = as.Date("2017-01-01"),
+  xmax = as.Date("2017-12-01"),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+LV4 <- data.frame(
+  xmin = as.Date("2021-01-01"),
+  xmax = as.Date("2021-12-01"),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+###
+
+alpha = 0.2
+
+```
+
+```{r Making ggplots}
+
+# Large cap stocks
+
+Large <- indices_roll_ret %>% 
+     filter(Index == "Large_Caps") %>% 
+        ggplot() +
+    geom_rect(data = HV1, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = HV2, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = HV3, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = HV4, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = LV1, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_rect(data = LV2, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_rect(data = LV3, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_rect(data = LV4, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_line(aes(date, RollRets, colour = Method), 
+                  alpha = 0.8,
+                  size = 1) + 
+     fmxdat::fmx_cols() + 
+        labs(title = "Large Cap Shares", 
+             y = "",
+             x = "") +
+        theme_classic()
+
+###
+
+# Mid cap stocks
+
+Mid <- indices_roll_ret %>% 
+     filter(Index == "Mid_Caps") %>% 
+        ggplot() +
+    geom_rect(data = HV1, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = HV2, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = HV3, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = HV4, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = LV1, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_rect(data = LV2, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_rect(data = LV3, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_rect(data = LV4, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_line(aes(date, RollRets, colour = Method), 
+                  alpha = 0.8,
+                  size = 1) + 
+     fmxdat::fmx_cols() + 
+        labs(title = "Mid Cap Shares", 
+             y = "",
+             x = "") +
+        theme_classic()
+
+###
+
+# Small Cap shares 
+
+Small <- indices_roll_ret %>% 
+     filter(Index == "Small_Caps") %>% 
+        ggplot() +
+    geom_rect(data = HV1, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = HV2, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = HV3, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = HV4, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "red4", 
+              alpha = alpha) +
+    geom_rect(data = LV1, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_rect(data = LV2, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_rect(data = LV3, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_rect(data = LV4, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green4", 
+              alpha = alpha) +
+    geom_line(aes(date, RollRets, colour = Method), 
+                  alpha = 0.8,
+                  size = 1) + 
+     fmxdat::fmx_cols() + 
+        labs(title = "Small Cap Shares", 
+             y = "",
+             x = "") +
+        theme_classic()
+
+```
+
+```{r Plotting Large Caps}
+
+finplot(Large, 
+        x.date.dist = "1 year", 
+        x.date.type = "%Y", 
+        x.vert = T, 
+        y.pct = T, 
+        y.pct_acc = 1)
+
+```
+
+```{r Plotting Mid Caps}
+
+finplot(Mid, 
+        x.date.dist = "1 year", 
+        x.date.type = "%Y", 
+        x.vert = T, 
+        y.pct = T, 
+        y.pct_acc = 1)
+
+```
+
+```{r Plotting Small Caps}
+
+finplot(Small, 
+        x.date.dist = "1 year", 
+        x.date.type = "%Y", 
+        x.vert = T, 
+        y.pct = T, 
+        y.pct_acc = 1)
+
+```
+
+```{r Capped Portfolio}
+
+reb_ALSI <- ALSI %>% 
+filter(date %in% RebDays$date) %>% 
+mutate(RebalanceTime = format(date, "%Y%B")) %>% 
+    select(date, Tickers, Return, J203, RebalanceTime) %>% 
+    rename(weight = J203) %>% 
+    mutate(weight = coalesce(weight , 0))
+
+## Uncomment for stepping through function:
+# df_Cons <- rebalance_col %>% filter(date == first(date))
+# W_Cap = 0.08
+
+Proportional_Cap_Foo <- function(df_Cons, W_Cap = 0.08){
+  
+  # Let's require a specific form from the user... Alerting when it does not adhere this form
+  if( !"weight" %in% names(df_Cons)) stop("... for Calc capping to work, provide weight column called 'weight'")
+  
+  if( !"date" %in% names(df_Cons)) stop("... for Calc capping to work, provide date column called 'date'")
+  
+  if( !"Tickers" %in% names(df_Cons)) stop("... for Calc capping to work, provide id column called 'Tickers'")
+
+  # First identify the cap breachers...
+  Breachers <- 
+    df_Cons %>% filter(weight > W_Cap) %>% pull(Tickers)
+  
+  # Now keep track of breachers, and add to it to ensure they remain at 10%:
+  if(length(Breachers) > 0) {
+    
+    while( df_Cons %>% filter(weight > W_Cap) %>% nrow() > 0 ) {
+      
+      
+      df_Cons <-
+        
+        bind_rows(
+          
+          df_Cons %>% filter(Tickers %in% Breachers) %>% mutate(weight = W_Cap),
+          
+          df_Cons %>% filter(!Tickers %in% Breachers) %>% 
+            mutate(weight = (weight / sum(weight, na.rm=T)) * (1-length(Breachers)*W_Cap) )
+          
+        )
+      
+      Breachers <- c(Breachers, df_Cons %>% filter(weight > W_Cap) %>% pull(Tickers))
+      
+    }
+
+    if( sum(df_Cons$weight, na.rm=T) > 1.1 | sum(df_Cons$weight, na.rm=T) < 0.9 | max(df_Cons$weight, na.rm = T) > W_Cap) {
+      
+      stop( glue::glue("For the Generic weight trimming function used: the weight trimming causes non unit 
+      summation of weights for date: {unique(df_Cons$date)}...\n
+      The restriction could be too low or some dates have extreme concentrations...") )
+      
+    }
+    
+  } else {
+    
+  }
+  
+  df_Cons
+  
+  }
+  
+# Apply Proportional_Cap_Foo to ALSI to get capped return for cap of 10%
+Capped_df <- 
+reb_ALSI %>% 
+group_split(RebalanceTime) %>% 
+map_df(~Proportional_Cap_Foo(., W_Cap = 0.1) ) %>% select(-RebalanceTime)
+ 
+ALSI_wts <- Capped_df %>% tbl_xts(cols_to_xts = weight, spread_by = Tickers)
+
+ALSI_rts <- ALSI %>% 
+filter(Tickers %in% unique(Capped_df$Tickers)) %>% 
+tbl_xts(cols_to_xts = Return, spread_by = Tickers)
+
+ALSI_wts[is.na(ALSI_wts)] <- 0
+
+ALSI_rts[is.na(ALSI_rts)] <- 0
+
+ALSI_capped <- rmsfuns::Safe_Return.portfolio(R = ALSI_rts, weights = ALSI_wts, 
+    lag_weights = T) %>% 
+xts_tbl() %>% 
+rename(ALSI = portfolio.returns)
+
+# Construct Capped Portfolio and Determine Performance for SWIX
+
+reb_SWIX <- ALSI %>% 
+filter(date %in% RebDays$date) %>% 
+mutate(RebalanceTime = format(date, "%Y%B")) %>% 
+    select(date, Tickers, Return, J403, RebalanceTime) %>% 
+    rename(weight = J403) %>% 
+    mutate(weight = coalesce(weight , 0))
+  
+# Apply Proportional_Cap_Foo to ALSI to get capped return for cap of 6%
+Capped_df <- 
+reb_SWIX %>% 
+group_split(RebalanceTime) %>% 
+map_df(~Proportional_Cap_Foo(., W_Cap = 0.06) ) %>% select(-RebalanceTime)
+ 
+SWIX_wts <- Capped_df %>% tbl_xts(cols_to_xts = weight, spread_by = Tickers)
+
+SWIX_rts <- ALSI %>% 
+filter(Tickers %in% unique(Capped_df$Tickers)) %>% 
+tbl_xts(cols_to_xts = Return, spread_by = Tickers)
+
+SWIX_wts[is.na(SWIX_wts)] <- 0
+
+SWIX_rts[is.na(SWIX_rts)] <- 0
+
+SWIX_capped <- rmsfuns::Safe_Return.portfolio(R = SWIX_rts, weights = SWIX_wts, 
+    lag_weights = T) %>% 
+xts_tbl() %>% 
+rename(SWIX = portfolio.returns)
+
+
+# Combine and Plot Performance
+
+capped_indices <- left_join(ALSI_capped, SWIX_capped, by = "date") %>% 
+    pivot_longer(c("ALSI", "SWIX"), names_to = "Meth", values_to = "returns")
+
+# Calculate Uncapped Return for ALSI
+ALSI_wts <- ALSI %>% 
+filter(date %in% RebDays$date) %>% 
+mutate(RebalanceTime = format(date, "%Y%B")) %>% 
+    rename(weight = J203) %>% 
+    mutate(weight = coalesce(weight , 0)) %>% 
+    select(date, Tickers, Return, weight, RebalanceTime) %>% 
+     tbl_xts(cols_to_xts = weight, spread_by = Tickers)
+
+ALSI_wts[is.na(ALSI_wts)] <- 0
+
+ALSI_rts[is.na(ALSI_rts)] <- 0
+
+ALSI_capped <- rmsfuns::Safe_Return.portfolio(R = ALSI_rts, weights = ALSI_wts, 
+    lag_weights = T) %>% 
+xts_tbl() %>% 
+rename(ALSI = portfolio.returns)
+
+# Calculate Uncapped Return for SWIX
+ 
+SWIX_wts <- ALSI %>% 
+filter(date %in% RebDays$date) %>% 
+mutate(RebalanceTime = format(date, "%Y%B")) %>% 
+    rename(weight = J403) %>% 
+    mutate(weight = coalesce(weight , 0)) %>% 
+    select(date, Tickers, Return, weight, RebalanceTime) %>% 
+     tbl_xts(cols_to_xts = weight, spread_by = Tickers)
+
+SWIX_wts[is.na(SWIX_wts)] <- 0
+
+SWIX_rts[is.na(SWIX_rts)] <- 0
+
+SWIX_capped <- rmsfuns::Safe_Return.portfolio(R = SWIX_rts, weights = SWIX_wts, 
+    lag_weights = T) %>% 
+xts_tbl() %>% 
+rename(SWIX = portfolio.returns)
+
+# Combine and Plot
+
+ALSI_SWIX <- left_join(ALSI_capped, SWIX_capped, by = "date") %>% 
+    pivot_longer(c("ALSI", "SWIX"), names_to = "Meth", values_to = "Returns")
+
+q2_p3 <- capped_indices %>% 
+    group_by(Meth) %>%
+    mutate(Idx = cumprod(1 + returns)) %>% 
+ggplot() + 
+geom_line(aes(date, Idx, colour = Meth), alpha = 0.8) + 
+labs(subtitle = "ALSI capped at 10% and SWIX at 6%", 
+    x = "", y = "Cumulative Return") + 
+    fmx_cols() + 
+fmxdat::theme_fmx(subtitle.size = ggpts(20))
+
+q2_p4 <- ALSI_SWIX %>% 
+    group_by(Meth) %>%
+    mutate(Idx = cumprod(1 + Returns)) %>% 
+ggplot() + 
+geom_line(aes(date, Idx, colour = Meth), alpha = 0.8) + 
+labs(subtitle = "Uncapped Index Calculation for ALSI and SWIX", 
+    x = "", y = "") + 
+    fmx_cols() + 
+fmxdat::theme_fmx(subtitle.size = ggpts(20))
+
+grid.arrange(finplot(q2_p3), 
+             finplot(q2_p4))
+
 
 ```
 

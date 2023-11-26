@@ -50,7 +50,7 @@ library(fitHeavyTail)
 
 ```
 
-```{r}
+```{r Entire Portfolio Optimisation}
 
 rm(list = ls())
 
@@ -172,11 +172,3 @@ QuarterDates %>% map_df(~Roller(ReturnMatrix,
 head(PortfolioWeights, 15)
 
 ```
-
-# Data 
-
-```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
-
-
-```
-
