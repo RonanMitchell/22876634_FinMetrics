@@ -79,7 +79,7 @@ Data <- left_join(Flows, Rets, by = c("date", "Fund", "Index", "FoF")) %>%
 library(dplyr)
 library(ggplot2)
 
-source("Question 5/code/WinnersComparison.R")
+source("code/WinnersComparison.R")
 
 # Get unique dates from the original dataset.
 
@@ -119,7 +119,7 @@ ggplot(combined_plot_data, aes(x = Returns, fill = Variable)) +
 
 ```{r Losers}
 
-source("Question 5/code/LosersComparison.R")
+source("code/LosersComparison.R")
 
 # Repeat the Process. 
 

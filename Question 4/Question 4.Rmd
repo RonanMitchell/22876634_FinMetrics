@@ -79,7 +79,7 @@ Data <- left_join(Flows, Rets, by = c("date", "Fund", "Index", "FoF")) %>%
 library(dplyr)
 library(ggplot2)
 
-source("Question 5/code/WinnersComparison.R")
+source("code/WinnersComparison.R")
 
 # Get unique dates from the original dataset.
 
@@ -119,7 +119,7 @@ ggplot(combined_plot_data, aes(x = Returns, fill = Variable)) +
 
 ```{r Losers}
 
-source("Question 5/code/LosersComparison.R")
+source("code/LosersComparison.R")
 
 # Repeat the Process. 
 
@@ -206,70 +206,6 @@ DataAverage <- Data %>%
   ungroup() %>%
   na.omit() %>% 
     mutate(Flows = Flows/10000)
-
-###
-
-(DataAverage %>% 
-    filter(AvgReturnsPast3Years < median(AvgReturnsPast3Years), 
-           Flows > 0) %>% 
-    nrow(.))/nrow(DataAverage)*100
-
-###
-
-ggplot(DataAverage, aes(x = AvgReturnsPast3Years, y = Flows)) +
-    geom_smooth(method = "lm", se = TRUE, color = "grey") +
-    annotate("rect", 
-             xmin = -Inf, 
-             xmax = median(DataAverage$AvgReturnsPast3Years), 
-             ymin = -Inf, 
-             ymax = median(DataAverage$Flows), 
-             fill = "red", 
-             alpha = 0.18) +
-    annotate("rect", 
-             xmin = median(DataAverage$AvgReturnsPast3Years), 
-             xmax = Inf, 
-             ymin = -Inf, 
-             ymax = median(DataAverage$Flows), 
-             fill = "lightblue", 
-             alpha = 0.2) +
-    annotate("rect", 
-             xmin = -Inf,
-             xmax = median(DataAverage$AvgReturnsPast3Years), 
-             ymin = median(DataAverage$Flows), 
-             ymax = Inf,
-             fill = "pink", 
-             alpha = 0.2) +
-    annotate("rect", 
-             xmin = median(DataAverage$AvgReturnsPast3Years),
-             xmax = Inf, 
-             ymin = median(DataAverage$Flows), 
-             ymax = Inf, 
-             fill = "blue", 
-             alpha = 0.18) +
-  labs(title = "Correlation Between Flows and Returns",
-       x = "Average Returns (3yr)",
-       y = "Flows") +
-    geom_label(aes(x = -0.025, 
-                   y = 12500, 
-                   label = "19.9%"), 
-               fill = "white", 
-               color = "black") +
-    geom_label(aes(x = 0.1, 
-                   y = 12500, 
-                   label = "25.54%"), 
-               fill = "white", 
-               color = "black") +
-    geom_label(aes(x = -0.025,
-                   y = -5000, 
-                   label = "30.1%"), 
-               fill = "white", 
-               color = "black") +
-  geom_label(aes(x = 0.1, 
-                 y = -5000, 
-                 label = "24.46%"), 
-             fill = "white", 
-             color = "black") +
-  theme_bw()
 
 ```
 
