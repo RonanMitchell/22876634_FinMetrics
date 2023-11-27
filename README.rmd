@@ -4,7 +4,7 @@ output:
     variant: markdown_github
 ---
 
-The goal of this README is to give a clear explanation behind the code I provide in order to perform the Financial Econometrics practical, as well as the thought processes which lead me to the specific code selected or implemented. 
+The goal of this README is to give a clear explanation behind the code I provide in order to perform the Financial Econometrics examination, as well as the thought processes which lead me to the specific code selected or implemented. If you would like to see the write up for each question, go see the individual PDFs for the questions in their respective folders. This README is only a code explanation within the chunks. 
 
 ```{r Setup}
 
@@ -16,6 +16,10 @@ gc()
 
 tinytex::install_tinytex(force = TRUE)
 options(repos = "https://cran.mirror.ac.za/")
+
+###
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 5, fig.pos="H", fig.pos = 'H')
 
 ###
 
@@ -42,6 +46,8 @@ library(tbl2xts)
 library(knitr)
 
 library(fitHeavyTail)
+
+library(zoo)
 
 pacman::p_load(sugrrants, 
                rugarch)
@@ -74,7 +80,7 @@ AIFund <- read_rds("data/AI_Max_Fund.rds") %>%
 
 # Question exploration
 
-unique(ASISA$Fund) # Too many funds to consider. 
+# Too many funds in unique(ASISA$Fund) to  meaningfully consider. 
 
 # I am going to select the best and worst performing index and active funds separately. 
 
@@ -1335,6 +1341,236 @@ g2
 
 # Question 4 
 
+```{r Setting Up}
+
+rm(list = ls())
+
+gc()
+
+###
+
+Rets <- read_rds("data/ASISA_Rets.rds") %>%
+  mutate(Fund = str_trim(Fund)) 
+
+Flows <- read_rds("data/ASISA_Flows.rds") %>%
+  mutate(Fund = str_trim(Fund)) %>%
+  filter(Fund %in% unique(Rets$Fund)) 
+
+# I only want funds that have existed over the entire time period. 
+
+Data <- left_join(Flows, Rets, by = c("date", "Fund", "Index", "FoF")) %>% 
+    na.omit() %>% 
+    filter(Index == "No") %>% 
+    group_by(Fund) %>%
+    filter(min(date) == as.Date("2003-10-31") & 
+             max(date) == as.Date("2023-09-30")) %>%
+    ungroup()
+
+rm(Flows) # neatness
+rm(Rets)
+
+```
+
+```{r Winners}
+
+# This code is quite hectic (for me at least). It: 
+
+   # finds winners in a given three year time period, as well as finding the performance of those same funds over the next three years. This way, we can compare winners in an arbitrary time period (for all time periods) to their subsequent performance in the folliwng three years ( for all winners in all time periods) to see whether past return distributions are good indicators of future returns distributions. 
+
+source("Question 4/code/WinnersComparison.R")
+
+# Get unique dates from the original dataset.
+
+unique_dates <- sort(unique(Data$date))
+
+# Apply the function to generate plot data for each date range.
+
+plot_data_list <- lapply(1:(length(unique_dates)-2), function(i) {
+  start_date <- unique_dates[i]
+  end_date <- unique_dates[i + 1]
+  next_date <- unique_dates[i + 2]
+  
+  # Call the function and generate the plot data.
+  
+  WinnersComparison((Data %>% filter(Index == "No")), 
+                    start_date,
+                    end_date, 
+                    next_date)
+})
+
+# Combine the plot data into a single data frame.
+
+combined_plot_data <- do.call(rbind, plot_data_list)
+
+# Create a density plot using ggplot for the combined data.
+
+g1 <-
+ggplot(combined_plot_data, aes(x = Returns, fill = Variable)) +
+  geom_density(alpha = 0.6) +
+  labs(title = "Distribution of Winners and Subsequent Performance",
+       x = "",
+       y = "") +
+  scale_fill_manual(values = c("Winners" = "lightblue", 
+                               "Subsequent" = "red4")) +
+     xlim(c(-0.1, 0.16)) +
+    guides(fill = guide_legend(title = "")) +
+  theme_bw()
+
+```
+
+```{r Losers}
+
+# this function works exactly the same as the winners function, except it finds losers in the bottom quantile of performs. 
+
+source("Question 4/code/LosersComparison.R")
+
+# Repeat the Process. 
+
+unique_dates <- sort(unique(Data$date))
+
+plot_data_list <- lapply(1:(length(unique_dates)-2), function(i) {
+  start_date <- unique_dates[i]
+  end_date <- unique_dates[i + 1]
+  next_date <- unique_dates[i + 2]
+  
+  # Call the function and generate the plot data.
+  
+  LosersComparison((Data %>% filter(Index == "No")), start_date, end_date, next_date)
+})
+
+combined_plot_data <- do.call(rbind, plot_data_list)
+
+# Create a density plot using ggplot for the combined data.
+
+g2 <-
+ggplot(combined_plot_data, aes(x = Returns, fill = Variable)) +
+  geom_density(alpha = 0.6) +
+  labs(title = "Distribution of Losers and Subsequent Performance",
+       x = "",
+       y = "") +
+  scale_fill_manual(values = c("Losers" = "red4", 
+                               "Subsequent" = "lightblue")) +
+     xlim(c(-0.15, 0.15)) +
+    guides(fill = guide_legend(title = "")) +
+  theme_bw()
+
+```
+
+```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = " \\label{Figure4.1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
+
+g1
+
+```
+
+```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = " \\label{Figure4.2}", fig.ext = 'png', fig.height = 3, fig.width = 6}
+
+g2
+
+```
+
+```{r Starting Again}
+
+rm(list = ls())
+
+###
+
+Rets <- read_rds("data/ASISA_Rets.rds") %>%
+  mutate(Fund = str_trim(Fund)) 
+
+Flows <- read_rds("data/ASISA_Flows.rds") %>%
+  mutate(Fund = str_trim(Fund)) %>%
+  filter(Fund %in% unique(Rets$Fund)) 
+
+# I only want funds that have existed over the entire time period. 
+
+Data <- left_join(Flows, Rets, by = c("date", "Fund", "Index", "FoF")) %>% 
+    na.omit() %>% 
+    filter(Index == "No") %>% # active managers
+    group_by(Fund) %>%
+    filter(min(date) == as.Date("2003-10-31") & 
+             max(date) == as.Date("2023-09-30")) %>%
+    ungroup()
+
+rm(Rets) # neatness
+rm(Flows)
+
+```
+
+```{r }
+
+### Re-finding the average returns and flows today, and isolating these so that I can plot them. 
+
+DataAverage <- Data %>%
+  arrange(Fund, date) %>%
+  group_by(Fund) %>%
+  mutate(AvgReturnsPast3Years = zoo::rollapply(Returns, width = 36, FUN = mean, align = "right", partial = TRUE)) %>%
+  ungroup() %>%
+  na.omit() %>% 
+    mutate(Flows = Flows/10000) # to make correlation easy to plot nicely on the ggplot without horrible numbers on the y axis. 
+
+```
+
+```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = " \\label{Figure4.3}", fig.ext = 'png', fig.height = 3, fig.width = 6}
+
+# Plot of correlation between average three year returns and Flows TODAY. Line of best fit plotted and % of data present in each quadrant once again discussed. 
+
+ggplot(DataAverage, aes(x = AvgReturnsPast3Years, y = Flows)) +
+    geom_smooth(method = "lm", se = TRUE, color = "grey") + # line
+    annotate("rect", 
+             xmin = -Inf, 
+             xmax = median(DataAverage$AvgReturnsPast3Years),# above median
+             ymin = -Inf, 
+             ymax = median(DataAverage$Flows), 
+             fill = "red", 
+             alpha = 0.18) +
+    annotate("rect", 
+             xmin = median(DataAverage$AvgReturnsPast3Years), 
+             xmax = Inf, 
+             ymin = -Inf, 
+             ymax = median(DataAverage$Flows), 
+             fill = "lightblue", 
+             alpha = 0.2) +
+    annotate("rect", 
+             xmin = -Inf,
+             xmax = median(DataAverage$AvgReturnsPast3Years), 
+             ymin = median(DataAverage$Flows), 
+             ymax = Inf,
+             fill = "pink", 
+             alpha = 0.2) +
+    annotate("rect", 
+             xmin = median(DataAverage$AvgReturnsPast3Years),
+             xmax = Inf, 
+             ymin = median(DataAverage$Flows), 
+             ymax = Inf, 
+             fill = "blue", 
+             alpha = 0.18) +
+  labs(title = "Correlation Between Flows and Returns",
+       x = "Average Returns (3yr)",
+       y = "Flows") +
+    geom_label(aes(x = -0.025, 
+                   y = 12500, 
+                   label = "19.9%"), # labelling by % calculated 
+               fill = "white", 
+               color = "black") +
+    geom_label(aes(x = 0.1, 
+                   y = 12500, 
+                   label = "25.54%"), 
+               fill = "white", 
+               color = "black") +
+    geom_label(aes(x = -0.025,
+                   y = -5000, 
+                   label = "30.1%"), 
+               fill = "white", 
+               color = "black") +
+  geom_label(aes(x = 0.1, 
+                 y = -5000, 
+                 label = "24.46%"), 
+             fill = "white", 
+             color = "black") +
+  theme_bw()
+
+```
+
 # Question 5
 
 ```{r }
@@ -1612,8 +1848,6 @@ DateVector <- Combined_assets %>%
     unique
 
 # But the re-balancing is quarterly, as specified in question.
-
-DateVector # To get the first and last date!
 
 QuarterDates <- rmsfuns::dateconverter(as.Date("2010-01-31"), 
                                        as.Date("2021-10-29"), 
