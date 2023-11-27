@@ -12,7 +12,7 @@ output:
     df_print: paged
 Author1: Ronan Morris
 Ref1: Stellenbosch University
-Email1: 22876634\\@sun.ac.za
+Email1: 22876634
 BottomRFooter: \footnotesize Page \thepage
 addtoprule: yes
 addfootrule: yes
@@ -45,13 +45,209 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width 
 if(!require("tidyverse")) install.packages("tidyverse")
 
 library(tidyverse)
+pacman::p_load(sugrrants, rugarch)
+library(cowplot)
+library(tbl2xts)
+library(fmxdat)
+library(knitr)
 
 ```
 
-# Data 
+```{r Loading and Wrangling}
 
-```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
+rm(list = ls())
 
+# Everything is in dollars. 
+
+cncy <- read_rds("data/currencies.rds") 
+
+cncy_Carry <- read_rds("data/cncy_Carry.rds") # Deutche Bank??
+
+cncy_value <- read_rds("data/cncy_value.rds") # no clue
+
+cncy_IV <- read_rds("data/cncyIV.rds") 
+
+bbdxy <- read_rds("data/bbdxy.rds")
+
+# bbdxy includes Japan, Canada, China, US, EU, India, Australia... 
+
+```
+
+```{r}
+
+###
+
+# all three of these functions are essentially the practicals wrapped in a function. 
+
+source("code/VolPlotter.R") 
+
+source("code/Selection_foo.R")
+
+source("code/GARCH_Maker_foo.R")
+
+###
+
+ZARRet <- cncy %>% 
+    filter(date > as.Date("2010-12-31")) %>% # last ten years
+    filter(Name %in% "SouthAfrica_Cncy") %>% 
+    mutate(dlogret = log(Price) - lag(log(Price))) %>% 
+    filter(date > first(date)) %>% 
+    rename(Date = date) # for simple substitution into class code.
+
+# Find best model
+
+NumberOneModel <- Selection_foo(ZARRet)
+
+#NumberOneModel
+
+#               sGARCH  gjrGARCH    eGARCH    apARCH
+#Akaike       -6.476002 -6.483637 -6.481459 -6.479932
+
+ChosenGarch <- GARCH_Maker_foo(ZARRet, "gjrGARCH") 
+
+# gjrGARCH has the lowest AIC statistic. 
+
+# Ranking the Volatilites
+
+TableFrame <- cncy %>%
+  filter(date > as.Date("2010-12-31")) %>%
+  arrange(date) %>%
+  group_by(Name) %>%
+  mutate(dlogret = log(Price) - lag(log(Price))) %>%
+  filter(date > first(date)) %>%
+  rename(Date = date) %>%
+  mutate(vol = dlogret^2) %>%
+  summarise(AvGlobeVol = mean(vol)) %>%
+  arrange(desc(AvGlobeVol)) %>%
+  top_n(10, AvGlobeVol) %>%
+  rename(Country = Name) %>%
+  mutate(Country = gsub("_Cncy", "", Country)) %>% 
+    rename(Vol = AvGlobeVol)
+# MAKE A TABLE FROM THIS
+
+# Average global volatility
+
+AvGlobeVol <- cncy_IV %>% 
+    filter(date > as.Date("2010-12-31")) %>% 
+    group_by(date) %>% 
+    summarise(AvGlobeVol = mean(Price)) %>% 
+        mutate(Global_vol = AvGlobeVol/max(AvGlobeVol))
+
+# Add sigma
+
+sigma <- sigma(ChosenGarch) %>% 
+    xts_tbl() 
+
+colnames(sigma) <- c("date", "sigma") 
+
+sigma <- sigma %>% 
+    mutate(Date = as.Date(date)) %>% 
+    mutate(ZAR_sigma = sigma/max(sigma))%>% 
+    left_join(., AvGlobeVol, 
+              by = "date")
+
+# Find Strong Dollar periods, I want to make my green sections again. 
+
+USData <- bbdxy %>% 
+    filter(date > as.Date("2010-12-31")) %>% 
+    mutate(dlogret = log(Price) - lag(log(Price))) %>% 
+    filter(date > first(date)) %>%
+    mutate(Year = format(date, "%Y")) %>% 
+    group_by(Year) %>%
+    mutate(TopQtile = quantile(dlogret, 0.9))
+
+USData <- USData %>% 
+  
+  mutate(Year = format(date, "%Y")) %>% 
+  
+  group_by(Year) %>% summarise(SD = sd(dlogret)*sqrt(12)) %>% 
+  
+  mutate(TopQtile = quantile(SD, 0.2))
+
+# 2011, 2015, 2016, 2020 are stable dollars years. 
+
+HV1 <- data.frame(
+  xmin = as.Date("2021-01-01"),
+  xmax = as.Date("2021-12-01"),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+HV2 <- data.frame(
+  xmin = as.Date("2014-01-01"),
+  xmax = as.Date("2014-12-01"),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+HV3 <- data.frame(
+  xmin = as.Date("2019-01-01"),
+  xmax = as.Date("2019-12-01"),
+  ymin = -Inf,
+  ymax = Inf
+)
+
+###
+
+gg2 <- sigma %>%
+  select(-date) %>%
+  pivot_longer(c("ZAR_sigma", "Global_vol"),
+               names_to = "Vol_type",
+               values_to = "VOL") %>%
+  ggplot() +
+    geom_rect(data = HV1, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green3", 
+              alpha = 0.2) +
+    geom_rect(data = HV2, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green3", 
+              alpha = 0.2) +
+    geom_rect(data = HV3, 
+              aes(xmin = xmin, 
+                  xmax = xmax, 
+                  ymin = ymin, 
+                  ymax = ymax), 
+              fill = "green3", 
+              alpha = 0.2) +
+  geom_line(aes(Date, VOL, colour = Vol_type), size = 0.8, alpha = 0.7) +
+  labs(
+    title = "ZAR and Global Average Volatility",
+    x = "",
+    y = ""
+  ) +
+  scale_color_manual(values = c("ZAR_sigma" = "orange", 
+                                "Global_vol" = "red4")) +
+  theme_classic() +
+  theme(
+    legend.position = "bottom",  
+    legend.box = "horizontal"    
+  ) +
+  guides(color = guide_legend(title = ""))
+
+```
+
+```{r}
+
+kable(TableFrame)
+
+```
+
+```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure5.1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
+
+VolPlotter(data = ZARRet, fit = ChosenGarch)
+
+```
+
+```{r ,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure5.2}", fig.ext = 'png', fig.height = 3, fig.width = 6}
+
+gg2
 
 ```
 

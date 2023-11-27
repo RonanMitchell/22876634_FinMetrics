@@ -1,0 +1,285 @@
+\documentclass[11pt,preprint, authoryear]{elsarticle}
+
+\usepackage{lmodern}
+%%%% My spacing
+\usepackage{setspace}
+\setstretch{1.2}
+\DeclareMathSizes{12}{14}{10}{10}
+
+% Wrap around which gives all figures included the [H] command, or places it "here". This can be tedious to code in Rmarkdown.
+\usepackage{float}
+\let\origfigure\figure
+\let\endorigfigure\endfigure
+\renewenvironment{figure}[1][2] {
+    \expandafter\origfigure\expandafter[H]
+} {
+    \endorigfigure
+}
+
+\let\origtable\table
+\let\endorigtable\endtable
+\renewenvironment{table}[1][2] {
+    \expandafter\origtable\expandafter[H]
+} {
+    \endorigtable
+}
+
+
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+    \usepackage{xltxtra,xunicode}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+  \newcommand{\euro}{€}
+\fi
+
+\usepackage{amssymb, amsmath, amsthm, amsfonts}
+
+\def\bibsection{\section*{References}} %%% Make "References" appear before bibliography
+
+
+\usepackage[round]{natbib}
+
+\usepackage{longtable}
+\usepackage[margin=2.3cm,bottom=2cm,top=2.5cm, includefoot]{geometry}
+\usepackage{fancyhdr}
+\usepackage[bottom, hang, flushmargin]{footmisc}
+\usepackage{graphicx}
+\numberwithin{equation}{section}
+\numberwithin{figure}{section}
+\numberwithin{table}{section}
+\setlength{\parindent}{0cm}
+\setlength{\parskip}{1.3ex plus 0.5ex minus 0.3ex}
+\usepackage{textcomp}
+\renewcommand{\headrulewidth}{0.2pt}
+\renewcommand{\footrulewidth}{0.3pt}
+
+\usepackage{array}
+\newcolumntype{x}[1]{>{\centering\arraybackslash\hspace{0pt}}p{#1}}
+
+%%%%  Remove the "preprint submitted to" part. Don't worry about this either, it just looks better without it:
+\makeatletter
+\def\ps@pprintTitle{%
+  \let\@oddhead\@empty
+  \let\@evenhead\@empty
+  \let\@oddfoot\@empty
+  \let\@evenfoot\@oddfoot
+}
+\makeatother
+
+ \def\tightlist{} % This allows for subbullets!
+
+\usepackage{hyperref}
+\hypersetup{breaklinks=true,
+            bookmarks=true,
+            colorlinks=true,
+            citecolor=blue,
+            urlcolor=blue,
+            linkcolor=blue,
+            pdfborder={0 0 0}}
+
+
+% The following packages allow huxtable to work:
+\usepackage{siunitx}
+\usepackage{multirow}
+\usepackage{hhline}
+\usepackage{calc}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{caption}
+
+
+\newenvironment{columns}[1][]{}{}
+
+\newenvironment{column}[1]{\begin{minipage}{#1}\ignorespaces}{%
+\end{minipage}
+\ifhmode\unskip\fi
+\aftergroup\useignorespacesandallpars}
+
+\def\useignorespacesandallpars#1\ignorespaces\fi{%
+#1\fi\ignorespacesandallpars}
+
+\makeatletter
+\def\ignorespacesandallpars{%
+  \@ifnextchar\par
+    {\expandafter\ignorespacesandallpars\@gobble}%
+    {}%
+}
+\makeatother
+
+\newenvironment{CSLReferences}[2]{%
+}
+
+\urlstyle{same}  % don't use monospace font for urls
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\setcounter{secnumdepth}{5}
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+
+%%% Include extra packages specified by user
+
+%%% Hard setting column skips for reports - this ensures greater consistency and control over the length settings in the document.
+%% page layout
+%% paragraphs
+\setlength{\baselineskip}{12pt plus 0pt minus 0pt}
+\setlength{\parskip}{12pt plus 0pt minus 0pt}
+\setlength{\parindent}{0pt plus 0pt minus 0pt}
+%% floats
+\setlength{\floatsep}{12pt plus 0 pt minus 0pt}
+\setlength{\textfloatsep}{20pt plus 0pt minus 0pt}
+\setlength{\intextsep}{14pt plus 0pt minus 0pt}
+\setlength{\dbltextfloatsep}{20pt plus 0pt minus 0pt}
+\setlength{\dblfloatsep}{14pt plus 0pt minus 0pt}
+%% maths
+\setlength{\abovedisplayskip}{12pt plus 0pt minus 0pt}
+\setlength{\belowdisplayskip}{12pt plus 0pt minus 0pt}
+%% lists
+\setlength{\topsep}{10pt plus 0pt minus 0pt}
+\setlength{\partopsep}{3pt plus 0pt minus 0pt}
+\setlength{\itemsep}{5pt plus 0pt minus 0pt}
+\setlength{\labelsep}{8mm plus 0mm minus 0mm}
+\setlength{\parsep}{\the\parskip}
+\setlength{\listparindent}{\the\parindent}
+%% verbatim
+\setlength{\fboxsep}{5pt plus 0pt minus 0pt}
+
+
+
+\begin{document}
+
+
+
+\begin{frontmatter}  %
+
+\title{Question 6}
+
+% Set to FALSE if wanting to remove title (for submission)
+
+
+
+
+\author[Add1]{Ronan Morris}
+\ead{22876634}
+
+
+
+
+
+\address[Add1]{Stellenbosch University}
+
+
+
+\vspace{1cm}
+
+
+
+
+
+\vspace{0.5cm}
+
+\end{frontmatter}
+
+\setcounter{footnote}{0}
+
+
+
+%________________________
+% Header and Footers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pagestyle{fancy}
+\chead{}
+\rhead{}
+\lfoot{}
+\rfoot{\footnotesize Page \thepage}
+\lhead{}
+%\rfoot{\footnotesize Page \thepage } % "e.g. Page 2"
+\cfoot{}
+
+%\setlength\headheight{30pt}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%________________________
+
+\headsep 35pt % So that header does not go over title
+
+
+
+
+In this question I was tasked to create a Global Balanced Index Fund
+portfolio using a mix of traded global indexes. Certain constraints were
+set to me by my superiors. I would like to discuss how I handled each.
+
+The first constraint was that it should be a ``long only'' strategy. In
+accordance with this, I set the lower bound to be equal to 1\%. I set
+the upper bound to be 40\%, which could seem excessive, I believe that
+``too much of a good thing'' is a good mantra, and we should limit
+exposure to specific assets. An upper bound of 40\% seems slightly high
+but it is not unheard of.
+
+I decided to use set the weighting for equities and bonds at 60\% and
+25\% respectively. I have no particular research into the optimal
+weights of these instruments, and I do not believe that I could make a
+better allocation other than the limit. I will say that equities tend to
+have a higher volatility, but they yield a higher return (surprisingly
+so, actually - Mehra \& Prescott, 1985). This allocation should be
+carefully considered in the real world, but I have simply set the
+constraints to the limit.
+
+I have not used any assets that do not have returns data for at least
+the last three years, and I have used quarterly re-balancing; this is in
+line with the policies of my superiors, and presumably the institution I
+would be working for in this scenario. I only considered data from 2010
+onwards (after the financial crisis) for this analysis. The final
+consideration was what length to set the lookback period. I set it to 12
+months, as I saw in much of the discussions online and in the
+literature, that this is a good starting point for portfolio
+optimisation.
+
+Please see the first date of the optimised portfolio for all assets,
+their weights, and the method of optimisation. Namely, these include
+mean variance, minimum volatility, and the Sharpe portfolio. These have
+differing profiles. For example, one would want to drive for maximum
+diversification if assets have similar Sharpe ratios. The different
+types also make different assumptions about returns, or expected
+returns.
+
+\begin{verbatim}
+## # A tibble: 15 x 5
+##    stocks             mv minvol sharpe date      
+##    <chr>           <dbl>  <dbl>  <dbl> <date>    
+##  1 ADXY Index     0.0100 0.2    0.0769 2010-03-31
+##  2 BCOMTR Index   0.01   0.0355 0.0769 2010-03-31
+##  3 DXY Index      0.0100 0.2    0.0769 2010-03-31
+##  4 LEATTREU Index 0.0100 0.0100 0.0769 2010-03-31
+##  5 LGAGTRUH Index 0.0100 0.2    0.0769 2010-03-31
+##  6 LGCPTRUH Index 0.0100 0.0100 0.0769 2010-03-31
+##  7 LP05TREH Index 0.0100 0.0724 0.0769 2010-03-31
+##  8 LUACTRUU Index 0.120  0.0100 0.0769 2010-03-31
+##  9 LUAGTRUU Index 0.0100 0.2    0.0769 2010-03-31
+## 10 MSCI_ACWI      0.200  0.01   0.0769 2010-03-31
+## 11 MSCI_Jap       0.200  0.0320 0.0769 2010-03-31
+## 12 MSCI_RE        0.200  0.01   0.0769 2010-03-31
+## 13 MSCI_USA       0.200  0.0100 0.0769 2010-03-31
+## 14 ADXY Index     0.0100 0.2    0.0769 2010-06-30
+## 15 BCOMTR Index   0.01   0.0355 0.0769 2010-06-30
+\end{verbatim}
+
+\bibliography{Tex/ref}
+
+
+
+
+
+\end{document}

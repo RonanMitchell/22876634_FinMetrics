@@ -94,9 +94,7 @@ ZARSD <- ZAR %>%
   
   group_by(Year) %>% summarise(SD = sd(Return)*sqrt(12)) %>% 
   
-  mutate(TopQtile = quantile(SD, 0.67),
-         
-         BotQtile = quantile(SD, 0.33))
+  mutate(TopQtile = quantile(SD, 0.67))
 
 Hi_Vol <- ZARSD %>% filter(SD > TopQtile) %>% pull(Year)
 

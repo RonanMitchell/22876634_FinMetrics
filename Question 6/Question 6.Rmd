@@ -50,7 +50,15 @@ library(fitHeavyTail)
 
 ```
 
-```{r Entire Portfolio Optimisation}
+In this question I was tasked to create a Global Balanced Index Fund portfolio using a mix of traded global indexes. Certain constraints were set to me by my superiors. I would like to discuss how I handled each. 
+
+The first constraint was that it should be a "long only" strategy. In accordance with this, I set the lower bound to be equal to 1%. I set the upper bound to be 40%, which could seem excessive, I believe that "too much of a good thing" is a good mantra, and we should limit exposure to specific assets. An upper bound of 40% seems slightly high but it is not unheard of. 
+
+I decided to use set the weighting for equities and bonds at 60% and 25% respectively. I have no particular research into the optimal weights of these instruments, and I do not believe that I could make a better allocation other than the limit. I will say that equities tend to have a higher volatility, but they yield a higher return (surprisingly so, actually - Mehra & Prescott, 1985). This allocation should be carefully considered in the real world, but I have simply set the constraints to the limit. 
+
+I have not used any assets that do not have returns data for at least the last three years, and I have used quarterly re-balancing; this is in line with the policies of my superiors, and presumably the institution I would be working for in this scenario. I only considered data from 2010 onwards (after the financial crisis) for this analysis. The final consideration was what length to set the lookback period. I set it to 12 months, as I saw in much of the discussions online and in the literature, that this is a good starting point for portfolio optimisation. 
+
+```{r Entire Portfolio Optimisation, include=FALSE, echo=FALSE}
 
 rm(list = ls())
 
@@ -174,9 +182,12 @@ QuarterDates %>% map_df(~Roller(ReturnMatrix,
                                 DateVector = ., 
                                 Amat = Amat, 
                                 bvec = bvec, 
-                                LookBack = 24))
+                                LookBack = 12)) %>% 
+    select(-Look_Back_Period)
 
 ```
+
+Please see the first date of the optimised portfolio for all assets, their weights, and the method of optimisation. Namely, these include mean variance, minimum volatility, and the Sharpe portfolio. These have differing profiles. For example, one would want to drive for maximum diversification if assets have similar Sharpe ratios. The different types also make different assumptions about returns, or expected returns. 
 
 ```{r Display, include=TRUE, echo=FALSE}
 
