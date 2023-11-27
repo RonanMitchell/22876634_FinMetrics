@@ -217,16 +217,30 @@
 
 
 
-\begin{verbatim}
-##  [1] "Australia_IV"   "Brazil_IV"      "Canada_IV"      "Chile_IV"      
-##  [5] "China_IV"       "Columbia_IV"    "Czech_IV"       "Denmark_IV"    
-##  [9] "EU_IV"          "HongKong_IV"    "Hungary_IV"     "India_IV"      
-## [13] "Israel_IV"      "Japan_IV"       "Malaysia_IV"    "Mexico_IV"     
-## [17] "Norway_IV"      "NZ_IV"          "Peru_IV"        "Philipines_IV" 
-## [21] "Poland_IV"      "Romania_IV"     "Russia_IV"      "Saudi_IV"      
-## [25] "Singapore_IV"   "SouthAfrica_IV" "SouthKorea_IV"  "Sweden_IV"     
-## [29] "Taiwan_IV"      "Thailand_IV"    "Turkey_IV"      "UK_IV"
-\end{verbatim}
+\hypertarget{volatility-and-garch}{%
+\section{Volatility and GARCH}\label{volatility-and-garch}}
+
+The way that I interpreted the question is three fold:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  I need to rank, by some metric, the average volatility of countries
+  over my selected time period of the last ten years (after 2010/01/01).
+  From this, I need to see where South Africa ranks.
+\item
+  Then, I should build a GARCH model (I have chosen univariate), select
+  the best specification, and show the ``cleaned'' volatility of the
+  ZAR, perhaps to be used in later explanations.
+\item
+  I should isolate low volatility time periods in the US dollar, and
+  plot the ZAR volatility against some sort of global average
+  volatility, perhaps only of selected countries, or all, and indicate
+  on the same set of axes the low USD volatility periods.
+\end{enumerate}
+
+In terms of the first point, see the table ranking the top ten countries
+by average volatility over the last ten years, below.
 
 \begin{longtable}[]{@{}lr@{}}
 \toprule\noalign{}
@@ -247,14 +261,42 @@ Turkey & 0.0000826 \\
 Mexico & 0.0000624 \\
 \end{longtable}
 
+As you can see, South Africa ranks in at number 4. This is an incredibly
+high position. The average volatility is substantially lower than Ghana
+at number one, but this is an outlier as it is higher than all others in
+the table by quite a distance. My comment on this is that the ZAR is
+indeed one of the most volatile currencies over the decade spanning 2010
+- 2021.
+
+I would now like to build a univariate GARCH model and estimate a noise
+reduced volatility estimate for the ZAR. For this I created three
+functions, which are all variations of the practical offered by Nico.
+Selection\_foo() selects the best model, GARCH\_Maker\_foo creates a
+GARCH model, and then I created VolPlotter() to plot the cleaned
+volatility, in case I wanted to repeat this process for other countries.
+I did not end up doing this, though.
+
+My chosen specification is a gjr-GARCH, because it had the lowest AIC.
+The AIC of this model is -6.483637. Figure 5.1 is the cleaned volatility
+of the ZAR plotted on the same set of axes as the raw volatility. You
+can clearly see that the GARCH estimate is noise reduced.
+
 \begin{figure}[H]
 
 {\centering \includegraphics{Question-5_files/figure-latex/unnamed-chunk-3-1} 
 
 }
 
-\caption{Caption Here \label{Figure5.1}}\label{fig:unnamed-chunk-3}
+\caption{ \label{Figure5.1}}\label{fig:unnamed-chunk-3}
 \end{figure}
+
+Finally, for step three, I calculated the low volatility periods for the
+USD and selected the top 3 years. Selecting only the years allows for a
+broader discussion and a simpler plot for the reader to interpret. I
+then plotted the ZAR volatility against the global average volatility
+over the time period. Selecting the global average is relatively simple,
+and perhaps not always the most informative, but given the question I
+interpreted that this would be the best decision.
 
 \begin{figure}[H]
 
@@ -262,17 +304,27 @@ Mexico & 0.0000624 \\
 
 }
 
-\caption{Caption Here \label{Figure5.2}}\label{fig:unnamed-chunk-4}
+\caption{ \label{Figure5.2}}\label{fig:unnamed-chunk-4}
 \end{figure}
 
-\begin{figure}[H]
+In figure 5.2 you can see that 2014, 2019, and 2021 were selected as the
+top 3 least volatile years for the USD in the past decade. My comment on
+this consists of two parts. Firstly, it is interesting that the ZAR has
+become so correlated over time to the global average volatility. You
+could argue that in the first half of the decade, this correlation did
+not necessarily exist. Though (I have no source for this but I think we
+learned it in Time Series Econometrics) I believe that co-movement is
+understood to increase during periods of economic struggle, which would
+explain the similar volatility during COVID-19.
 
-{\centering \includegraphics{Question-5_files/figure-latex/unnamed-chunk-5-1} 
-
-}
-
-\caption{Caption Here \label{Figure5.3}}\label{fig:unnamed-chunk-5}
-\end{figure}
+Secondly, we see that all currencies seem to become less volatile when
+the USD is less volatile. In 2014, we see a rapid decline in the global
+average volatility, as well as the Rand. We see a similar decrease in
+volatility in 2019, and after the pandemic in 2021. I would say that
+there does seem to be a good relationship between the ZAR and the USD in
+terms of volatility, but this is also true for the global average
+volatility, so I might not necessarily argue that the Rand specifically
+has a special relationship.
 
 \bibliography{Tex/ref}
 
